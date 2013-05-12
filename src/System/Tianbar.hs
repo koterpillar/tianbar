@@ -19,6 +19,7 @@ import System.Environment.XDG.BaseDir
 import System.Process
 
 import System.Taffybar.Systray
+import System.Tianbar.StrutProperties
 
 myScreen = 0
 myMonitor = 0
@@ -97,6 +98,17 @@ xmonadWebkitLogNew = do
     widgetShowAll l
     return (toWidget l)
 
+strutProperties :: Int       -- ^ Bar height
+                -> Rectangle -- ^ Current monitor rectangle
+                -> StrutProperties
+strutProperties bh (Rectangle mX mY mW mH) =
+    propertize sX sW sH
+    where sX = mX
+          sW = mW - 1
+          sH = bh + mY
+          bottomY (Rectangle _ y _ h) = y + h
+          propertize x w h = (0, 0, h, 0, 0, 0, 0, 0, x, x+w, 0, 0)
+
 main = do
     initGUI
 
@@ -112,9 +124,9 @@ main = do
     windowSetScreen window screen
     windowSetDefaultSize window w myHeight
     windowMove window x 0
-    -- TODO: this requires some C library
-    -- _ <- onRealize window $ setStrutProperties window
-    --                           $ strutProperties Top myHeight monitorSize allMonitorSizes
+    onRealize window $
+        setStrutProperties window $
+            strutProperties myHeight monitorSize
 
     box <- hBoxNew False mySpacing
     containerAdd window box
