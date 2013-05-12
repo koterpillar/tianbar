@@ -1,7 +1,9 @@
 name:                tianbar
 version:             0.1.0.0
 synopsis:            A desktop bar based on WebKit
-description:         A desktop bar based as much as possible on WebKit.
+description:
+  A desktop bar using WebKit for rendering as much as possible.
+  Based on Taffybar.
 homepage:            https://github.com/koterpillar/tianbar
 license:             MIT
 license-file:        LICENSE
@@ -29,3 +31,6 @@ executable tianbar
   ghc-options: -Wall -rtsopts -threaded
   ghc-prof-options: -auto-all
 
+source-repository head
+  type:                git
+  location:            git://github.com/koterpillar/tianbar.git
