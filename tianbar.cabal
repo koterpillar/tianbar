@@ -40,7 +40,7 @@ library
                      , utf8-string ==0.3.*
   hs-source-dirs:      src
   exposed-modules:     System.Tianbar.XMonadLog
-  ghc-options: -Wall -rtsopts -threaded
+  ghc-options: -Wall -rtsopts
   ghc-prof-options: -auto-all
 
 source-repository head
