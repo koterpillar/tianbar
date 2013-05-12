@@ -6,8 +6,8 @@ import Data.List
 import Data.List.Split
 import Data.List.Utils
 
-import DBus (toVariant, fromVariant, Signal(..), signal, parseObjectPath, parseInterfaceName, parseMemberName)
-import DBus.Client (listen, matchAny, MatchRule(..), connectSession, emit, Client)
+import DBus (fromVariant, Signal(..), parseObjectPath, parseInterfaceName, parseMemberName)
+import DBus.Client (listen, matchAny, MatchRule(..), connectSession)
 
 import Graphics.UI.Gtk hiding (Signal)
 import Graphics.UI.Gtk.WebKit.NetworkRequest
@@ -21,10 +21,17 @@ import System.Process
 import System.Tianbar.Systray
 import System.Tianbar.StrutProperties
 
+myScreen :: Int
 myScreen = 0
+
+myMonitor :: Int
 myMonitor = 0
-myHeight = 25
-mySpacing = 0 -- TODO: is widget spacing needed?
+
+barHeight :: Int
+barHeight = 25
+
+widgetSpacing :: Int
+widgetSpacing = 0
 
 gsettingsGet :: String -> String -> IO String
 gsettingsGet schema key = do
@@ -32,6 +39,7 @@ gsettingsGet schema key = do
     let len = length output
     return $ drop 1 $ take (len - 2) output
 
+gsettingsPrefix :: String
 gsettingsPrefix = "gsettings:"
 
 setupWebkitLog :: WebView -> IO ()
@@ -47,7 +55,7 @@ setupWebkitLog wk = do
     set wsettings [webSettingsEnableUniversalAccessFromFileUris := True]
     webViewSetWebSettings wk wsettings
 
-    on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
+    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
         Nothing -> return ()
         (Just req) -> do
             uri_ <- networkRequestGetUri req
@@ -60,7 +68,6 @@ setupWebkitLog wk = do
                     networkRequestSetUri req $
                         "data:text/plain," ++ setting
 
-    baseDir <- getUserConfigDir "taffybar"
     htmlFile <- getUserConfigFile "taffybar" "index.html"
     html <- readFile htmlFile
     webViewLoadHtmlString wk html $ "file://" ++ htmlFile
@@ -76,8 +83,7 @@ callback :: WebView -> Signal -> IO ()
 callback wk sig = do
     let [bdy] = signalBody sig
         Just status = fromVariant bdy
-    postGUIAsync $ do
-        webViewExecuteScript wk $ setStatus status
+    postGUIAsync $ webViewExecuteScript wk $ setStatus status
 
 setStatus :: String -> String
 setStatus status = let statusStr = escapeQuotes status in
@@ -88,12 +94,12 @@ xmonadWebkitLogNew :: IO Widget
 xmonadWebkitLogNew = do
     l <- webViewNew
 
-    on l realize $ setupWebkitLog l
+    _ <- on l realize $ setupWebkitLog l
 
     Just disp <- displayGetDefault
     screen <- displayGetScreen disp myScreen
     (Rectangle _ _ sw _) <- screenGetMonitorGeometry screen myMonitor
-    on l sizeRequest $ return (Requisition (sw `div` 2) myHeight)
+    _ <- on l sizeRequest $ return (Requisition (sw `div` 2) barHeight)
 
     widgetShowAll l
     return (toWidget l)
@@ -101,16 +107,16 @@ xmonadWebkitLogNew = do
 strutProperties :: Int       -- ^ Bar height
                 -> Rectangle -- ^ Current monitor rectangle
                 -> StrutProperties
-strutProperties bh (Rectangle mX mY mW mH) =
+strutProperties bh (Rectangle mX mY mW _) =
     propertize sX sW sH
     where sX = mX
           sW = mW - 1
           sH = bh + mY
-          bottomY (Rectangle _ y _ h) = y + h
           propertize x w h = (0, 0, h, 0, 0, 0, 0, 0, x, x+w, 0, 0)
 
+main :: IO ()
 main = do
-    initGUI
+    _ <- initGUI
 
     Just disp <- displayGetDefault
     screen <- displayGetScreen disp myScreen
@@ -119,16 +125,16 @@ main = do
     window <- windowNew
     widgetSetName window "Tianbar"
 
-    let Rectangle x y w h = monitorSize
+    let Rectangle x _ w _ = monitorSize
     windowSetTypeHint window WindowTypeHintDock
     windowSetScreen window screen
-    windowSetDefaultSize window w myHeight
+    windowSetDefaultSize window w barHeight
     windowMove window x 0
-    onRealize window $
+    _ <- onRealize window $
         setStrutProperties window $
-            strutProperties myHeight monitorSize
+            strutProperties barHeight monitorSize
 
-    box <- hBoxNew False mySpacing
+    box <- hBoxNew False widgetSpacing
     containerAdd window box
 
     wk <- xmonadWebkitLogNew
