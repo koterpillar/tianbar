@@ -5,6 +5,8 @@ module System.Tianbar.Systray ( systrayNew ) where
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Misc.TrayManager
 
+import System.Tianbar.Configuration
+
 systrayNew :: IO Widget
 systrayNew = do
   box <- hBoxNew False 5
@@ -16,6 +18,8 @@ systrayNew = do
   _ <- on trayManager trayIconAdded $ \w -> do
     widgetShowAll w
     boxPackStart box w PackNatural 0
+
+  widgetSetSizeRequest box (-1) barHeight
 
   widgetShowAll box
   return (toWidget box)
