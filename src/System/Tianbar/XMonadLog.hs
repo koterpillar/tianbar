@@ -6,6 +6,7 @@ module System.Tianbar.XMonadLog ( tianbarPP
 import Codec.Binary.UTF8.String (decodeString)
 
 import Data.Char
+import Data.List
 import Data.Maybe
 
 import DBus
@@ -16,6 +17,11 @@ import XMonad.Hooks.DynamicLog
 
 wrapClass :: String -> String -> String
 wrapClass cls = wrap ("<span class='" ++ cls ++ "'>") "</span>"
+
+wrapWorkspaceClass :: String -> String -> String
+wrapWorkspaceClass cls wid = wrapClass classes wid
+    where classes = intercalate " " [cls, ws, ws ++ wid]
+          ws = "workspace"
 
 escapeHtml :: String -> String
 escapeHtml = concatMap escapeChar
@@ -29,11 +35,11 @@ escapeHtml = concatMap escapeChar
 
 tianbarPP :: PP
 tianbarPP = defaultPP { ppTitle = escapeHtml
-                      , ppCurrent = wrapClass "current"
-                      , ppVisible = wrapClass "visible"
-                      , ppUrgent = wrapClass "urgent"
-                      , ppHidden = wrapClass "hidden"
-                      , ppHiddenNoWindows = wrapClass "hidden empty"
+                      , ppCurrent = wrapWorkspaceClass "current"
+                      , ppVisible = wrapWorkspaceClass "visible"
+                      , ppUrgent = wrapWorkspaceClass "urgent"
+                      , ppHidden = wrapWorkspaceClass "hidden"
+                      , ppHiddenNoWindows = wrapWorkspaceClass "hidden empty"
                       , ppSep = ""
                       , ppOrder = zipWith wrapClass [ "workspaces"
                                                     , "layout"
