@@ -19,10 +19,10 @@ executable tianbar
                      , MissingH ==1.2.*
                      , dbus ==0.10.*
                      , gtk ==0.12.*
+                     , gtk-traymanager ==0.1.*
                      , webkit ==0.12.*
                      , xdg-basedir ==0.2.*
                      , process ==1.1.*
-                     , taffybar ==0.2.*
   hs-source-dirs:      src
   pkgconfig-depends:   gtk+-2.0
   c-sources: src/gdk_property_change_wrapper.c

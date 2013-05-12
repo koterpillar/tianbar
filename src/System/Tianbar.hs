@@ -18,7 +18,7 @@ import System.Environment.XDG.BaseDir
 
 import System.Process
 
-import System.Taffybar.Systray
+import System.Tianbar.Systray
 import System.Tianbar.StrutProperties
 
 myScreen = 0
