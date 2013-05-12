@@ -104,15 +104,11 @@ xmonadWebkitLogNew = do
     widgetShowAll l
     return (toWidget l)
 
-strutProperties :: Int       -- ^ Bar height
-                -> Rectangle -- ^ Current monitor rectangle
-                -> StrutProperties
-strutProperties bh (Rectangle mX mY mW _) =
-    propertize sX sW sH
-    where sX = mX
-          sW = mW - 1
-          sH = bh + mY
-          propertize x w h = (0, 0, h, 0, 0, 0, 0, 0, x, x+w, 0, 0)
+topStrut :: Rectangle -> StrutProperties
+topStrut (Rectangle mX mY mW _) = (0, 0, h, 0, 0, 0, 0, 0, x, x + w, 0, 0)
+    where x = mX
+          w = mW - 1
+          h = barHeight + mY
 
 main :: IO ()
 main = do
@@ -131,8 +127,7 @@ main = do
     windowSetDefaultSize window w barHeight
     windowMove window x 0
     _ <- onRealize window $
-        setStrutProperties window $
-            strutProperties barHeight monitorSize
+        setStrutProperties window $ topStrut monitorSize
 
     box <- hBoxNew False widgetSpacing
     containerAdd window box
