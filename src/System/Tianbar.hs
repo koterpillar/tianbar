@@ -21,6 +21,9 @@ import System.Process
 import System.Tianbar.Systray
 import System.Tianbar.StrutProperties
 
+appName :: String
+appName = "tianbar"
+
 myScreen :: Int
 myScreen = 0
 
@@ -68,7 +71,7 @@ setupWebkitLog wk = do
                     networkRequestSetUri req $
                         "data:text/plain," ++ setting
 
-    htmlFile <- getUserConfigFile "taffybar" "index.html"
+    htmlFile <- getUserConfigFile appName "index.html"
     html <- readFile htmlFile
     webViewLoadHtmlString wk html $ "file://" ++ htmlFile
 
@@ -119,7 +122,7 @@ main = do
     monitorSize <- screenGetMonitorGeometry screen myMonitor
 
     window <- windowNew
-    widgetSetName window "Tianbar"
+    widgetSetName window appName
 
     let Rectangle x _ w _ = monitorSize
     windowSetTypeHint window WindowTypeHintDock
