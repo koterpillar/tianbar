@@ -20,14 +20,36 @@ import System.Process
 
 import System.Tianbar.Configuration
 
+import Paths_tianbar
+
 gsettingsGet :: String -> String -> IO String
 gsettingsGet schema key = do
     output <- readProcess "gsettings" ["get", schema, key] []
     let len = length output
     return $ drop 1 $ take (len - 2) output
 
-gsettingsPrefix :: String
-gsettingsPrefix = "gsettings:"
+type UriOverride = String -> Maybe (IO String)
+
+withPrefix :: String -> (String -> IO String) -> UriOverride
+withPrefix prefix func uri
+    | prefix `isPrefixOf` uri = Just $ func $ drop (length prefix) uri
+    | otherwise = Nothing
+
+gsettingsUriOverride :: UriOverride
+gsettingsUriOverride = withPrefix "gsettings:" $ \path -> do
+    let [schema, key] = splitOn "/" path
+    setting <- gsettingsGet schema key
+    return $ "data:text/plain," ++ setting
+
+dataFileOverride :: UriOverride
+dataFileOverride = withPrefix "tianbar:" $ \path -> do
+    liftM ("file://" ++) $ getDataFileName path
+
+uriOverrides :: [UriOverride]
+uriOverrides = [gsettingsUriOverride, dataFileOverride]
+
+allOverrides :: UriOverride
+allOverrides = foldr mplus Nothing . flip map uriOverrides . flip ($)
 
 setupWebkitLog :: WebView -> IO ()
 setupWebkitLog wk = do
@@ -45,15 +67,11 @@ setupWebkitLog wk = do
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
         Nothing -> return ()
         (Just req) -> do
-            uri_ <- networkRequestGetUri req
-            case uri_ of
+            uri <- networkRequestGetUri req
+            let override_ = uri >>= allOverrides
+            case override_ of
                 Nothing -> return ()
-                Just uri -> when (gsettingsPrefix `isPrefixOf` uri) $ do
-                    let path = drop (length gsettingsPrefix) uri
-                    let [schema, key] = splitOn "/" path
-                    setting <- gsettingsGet schema key
-                    networkRequestSetUri req $
-                        "data:text/plain," ++ setting
+                (Just override) -> override >>= networkRequestSetUri req
 
     htmlFile <- getUserConfigFile appName "index.html"
     html <- readFile htmlFile
