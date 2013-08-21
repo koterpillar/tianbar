@@ -12,6 +12,10 @@ define(['jquery'], function ($) {
     $('.widget-xmonad').html(st);
   }
 
+  // Currently, a check for this function (and if it doesn't exist,
+  // window.XMonadStatus) is hardcoded in Tianbar. A better solution
+  // would be to expose an interface for subscribing to DBus connections
+  // from JavaScript.
   window.setXMonadStatus = function (st) {
     window.XMonadStatus = undefined;
     setStatus(st);
