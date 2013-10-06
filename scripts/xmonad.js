@@ -7,25 +7,15 @@
  *
  * The plugin requires 'jquery' to be available through RequireJS.
  */
-define(['jquery'], function ($) {
-  function setStatus(st) {
-    $('.widget-xmonad').html(st);
-  }
-
-  // Currently, a check for this function (and if it doesn't exist,
-  // window.XMonadStatus) is hardcoded in Tianbar. A better solution
-  // would be to expose an interface for subscribing to DBus connections
-  // from JavaScript.
-  window.setXMonadStatus = function (st) {
-    window.XMonadStatus = undefined;
-    setStatus(st);
-  };
-
-  $(document).ready(function () {
-    window.setTimeout(function () {
-      if (window.XMonadStatus) {
-        window.setXMonadStatus(window.XMonadStatus);
-      }
-    }, 1000);
-  });
+define(['jquery', 'dbus'], function ($, dbus) {
+  dbus.listen(
+    {
+      path: '/org/xmonad/Log',
+      iface: 'org.xmonad.Log',
+      member: 'Update'
+    },
+    function (st) {
+      $('.widget-xmonad').html(st);
+    }
+  );
 });
