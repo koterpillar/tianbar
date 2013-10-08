@@ -8,7 +8,7 @@
  * The plugin requires 'jquery', 'moment' and 'moment/lang' to be
  * available through RequireJS.
  */
-define(['jquery', 'moment', 'moment/lang'], function ($, moment) {
+define(['jquery', 'moment', 'moment/lang'], function ($, moment, m_lang) {
   var config = {
     format: 'llll'
   };

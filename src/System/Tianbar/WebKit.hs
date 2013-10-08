@@ -73,7 +73,8 @@ callback wk index sig = do
 
 dbusCallback :: Int -> String -> String
 dbusCallback index result =
-    "window.dbusCallbacks[" ++ indexStr ++ "]('" ++ resultStr ++ "')"
+    "window.dbusCallbacks && "
+        ++ "window.dbusCallbacks[" ++ indexStr ++ "]('" ++ resultStr ++ "')"
     where indexStr = show index
           resultStr = escapeQuotes result
 

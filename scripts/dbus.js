@@ -2,9 +2,6 @@
  * A plugin to receive DBus events.
  */
 define(['jquery'], function ($) {
-  // The entry point for calling from Tianbar
-  window.dbusCallbacks = dbusCallbacks = [];
-
   return {
     /**
      * Listen for a particular DBus event.
@@ -12,7 +9,8 @@ define(['jquery'], function ($) {
      * @param handler {Function} The function to call upon receiving the event
      */
     listen: function (match, handler) {
-      var index = dbusCallbacks.push(handler) - 1;
+      window.dbusCallbacks = window.dbusCallbacks || [];
+      var index = window.dbusCallbacks.push(handler) - 1;
       var params = {
         index: index
       };

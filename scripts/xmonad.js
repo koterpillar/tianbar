@@ -7,7 +7,7 @@
  *
  * The plugin requires 'jquery' to be available through RequireJS.
  */
-define(['jquery', 'dbus'], function ($, dbus) {
+define(['jquery', './dbus'], function ($, dbus) {
   dbus.listen(
     {
       path: '/org/xmonad/Log',
