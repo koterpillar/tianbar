@@ -8,11 +8,10 @@ import Data.List.Split
 import Data.List.Utils
 import qualified Data.Map as M
 
-import DBus (fromVariant, Signal(..), parseObjectPath, parseInterfaceName, parseMemberName)
+import DBus
 import DBus.Client (Client, listen, matchAny, MatchRule(..), connectSession, disconnect)
 
-import Graphics.UI.Gtk hiding (disconnect, Signal)
-import qualified Graphics.UI.Gtk as Gtk
+import Graphics.UI.Gtk hiding (disconnect, Signal, Variant)
 import Graphics.UI.Gtk.WebKit.NetworkRequest
 import Graphics.UI.Gtk.WebKit.WebSettings
 import Graphics.UI.Gtk.WebKit.WebView
@@ -70,18 +69,28 @@ data DBusState = DBusState { dbusClient :: MVar Client
 escapeQuotes :: String -> String
 escapeQuotes = replace "'" "\\'" . replace "\\" "\\\\"
 
+toJavaScript :: Variant -> String
+toJavaScript v =
+    case (variantType v) of
+        TypeBoolean -> let Just b = fromVariant v :: Maybe Bool in case b of
+                          True -> "true"
+                          False -> "false"
+        TypeString -> let Just s = fromVariant v in "'" ++ escapeQuotes s ++ "'"
+        -- TODO: more types
+        _ -> error "Variant type not supported: " ++ (show v)
+
 callback :: WebView -> Int -> Signal -> IO ()
 callback wk index sig = do
-    let [bdy] = signalBody sig
-        Just result = fromVariant bdy
+    let result = signalBody sig
     postGUIAsync $ webViewExecuteScript wk $ dbusCallback index result
 
-dbusCallback :: Int -> String -> String
-dbusCallback index result =
+dbusCallback :: Int -> [Variant] -> String
+dbusCallback index params =
     "window.dbusCallbacks && "
-        ++ "window.dbusCallbacks[" ++ indexStr ++ "]('" ++ resultStr ++ "')"
+        ++ "window.dbusCallbacks[" ++ indexStr ++ "](" ++ resultStr ++ ")"
     where indexStr = show index
-          resultStr = escapeQuotes result
+          resultStr = intercalate "," paramsStr
+          paramsStr = map toJavaScript params
 
 dbusOverride :: WebView -> DBusState -> UriOverride
 dbusOverride wk dbus = withPrefix "dbus:" $ \path -> do
