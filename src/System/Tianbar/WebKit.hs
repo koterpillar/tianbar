@@ -1,5 +1,6 @@
 module System.Tianbar.WebKit where
 
+import Control.Concurrent.MVar
 import Control.Monad
 
 import Data.List
@@ -8,9 +9,10 @@ import Data.List.Utils
 import qualified Data.Map as M
 
 import DBus (fromVariant, Signal(..), parseObjectPath, parseInterfaceName, parseMemberName)
-import DBus.Client (Client, listen, matchAny, MatchRule(..), connectSession)
+import DBus.Client (Client, listen, matchAny, MatchRule(..), connectSession, disconnect)
 
-import Graphics.UI.Gtk hiding (Signal)
+import Graphics.UI.Gtk hiding (disconnect, Signal)
+import qualified Graphics.UI.Gtk as Gtk
 import Graphics.UI.Gtk.WebKit.NetworkRequest
 import Graphics.UI.Gtk.WebKit.WebSettings
 import Graphics.UI.Gtk.WebKit.WebView
@@ -62,6 +64,9 @@ dataFileOverride = withPrefix "tianbar:" $ \path -> do
     liftM ("file://" ++) $ getDataFileName path
 
 -- DBus callback override
+data DBusState = DBusState { dbusClient :: MVar Client
+                           }
+
 escapeQuotes :: String -> String
 escapeQuotes = replace "'" "\\'" . replace "\\" "\\\\"
 
@@ -78,7 +83,7 @@ dbusCallback index result =
     where indexStr = show index
           resultStr = escapeQuotes result
 
-dbusOverride :: WebView -> Client -> UriOverride
+dbusOverride :: WebView -> DBusState -> UriOverride
 dbusOverride wk dbus = withPrefix "dbus:" $ \path -> do
     let params = parseQuery path
     let matcher = matchAny { matchSender = Nothing
@@ -88,20 +93,29 @@ dbusOverride wk dbus = withPrefix "dbus:" $ \path -> do
                            , matchMember = M.lookup "member" params >>= parseMemberName
                            }
     let (Just index) = M.lookup "index" params >>= (return . read)
-    listen dbus matcher $ callback wk index
+    withMVar (dbusClient dbus) $ \client ->
+        listen client matcher $ callback wk index
     returnContent ""
 
 mergeOverrides :: [UriOverride] -> UriOverride
 mergeOverrides overrides = foldr mplus Nothing . flip map overrides . flip ($)
 
-tianbarWebView :: Client -> IO WebView
-tianbarWebView dbus = do
+tianbarWebView :: IO WebView
+tianbarWebView = do
     wk <- webViewNew
 
     -- Enable AJAX access to all domains
     wsettings <- webViewGetWebSettings wk
     set wsettings [webSettingsEnableUniversalAccessFromFileUris := True]
     webViewSetWebSettings wk wsettings
+
+    -- Connect DBus listener, and reconnect on reloads
+    dbus <- liftM DBusState $ connectSession >>= newMVar
+
+    _ <- on wk loadStarted $ \_ -> do
+        modifyMVar_ (dbusClient dbus) $ \client -> do
+            disconnect client
+            connectSession
 
     -- Process the special overrides
     let allOverrides = mergeOverrides [ gsettingsUriOverride
@@ -119,7 +133,7 @@ tianbarWebView dbus = do
 
     -- Handle new window creation
     _ <- on wk createWebView $ \_ -> do
-        nwk <- tianbarWebView dbus
+        nwk <- tianbarWebView
 
         window <- windowNew
         containerAdd window nwk
@@ -163,9 +177,7 @@ loadIndexPage wk = do
 
 tianbarWebkitNew :: IO Widget
 tianbarWebkitNew = do
-    dbus <- connectSession
-
-    l <- tianbarWebView dbus
+    l <- tianbarWebView
 
     _ <- on l realize $ loadIndexPage l
 
