@@ -1,12 +1,18 @@
+{-# Language OverloadedStrings #-}
 module System.Tianbar.WebKit where
 
 import Control.Concurrent.MVar
 import Control.Monad
 
+import Data.Aeson
+import Data.Int
 import Data.List
 import Data.List.Split
 import Data.List.Utils
 import qualified Data.Map as M
+import qualified Data.Text.Lazy as T
+import qualified Data.Text.Lazy.Encoding as E
+import Data.Word
 
 import DBus
 import DBus.Client (Client, listen, matchAny, MatchRule(..), connectSession, disconnect)
@@ -69,28 +75,40 @@ data DBusState = DBusState { dbusClient :: MVar Client
 escapeQuotes :: String -> String
 escapeQuotes = replace "'" "\\'" . replace "\\" "\\\\"
 
-toJavaScript :: Variant -> String
-toJavaScript v =
-    case (variantType v) of
-        TypeBoolean -> let Just b = fromVariant v :: Maybe Bool in case b of
-                          True -> "true"
-                          False -> "false"
-        TypeString -> let Just s = fromVariant v in "'" ++ escapeQuotes s ++ "'"
-        -- TODO: more types
-        _ -> error "Variant type not supported: " ++ (show v)
+instance ToJSON Variant where
+    toJSON v = let t = variantType v in
+        case t of
+            TypeBoolean -> let Just b = fromVariant v :: Maybe Bool in toJSON b
+            TypeString -> let Just s = fromVariant v :: Maybe String in toJSON s
+            TypeWord8 -> let Just i = fromVariant v :: Maybe Word8 in toJSON i
+            TypeWord16 -> let Just i = fromVariant v :: Maybe Word16 in toJSON i
+            TypeWord32 -> let Just i = fromVariant v :: Maybe Word32 in toJSON i
+            TypeWord64 -> let Just i = fromVariant v :: Maybe Word64 in toJSON i
+            TypeInt16 -> let Just i = fromVariant v :: Maybe Int16 in toJSON i
+            TypeInt32 -> let Just i = fromVariant v :: Maybe Int32 in toJSON i
+            TypeInt64 -> let Just i = fromVariant v :: Maybe Int64 in toJSON i
+            -- TODO: more types
+            _ -> error $ "Variant type not supported: "
+                      ++ show v ++ " (type: " ++ show t ++ ")"
+
+instance ToJSON Signal where
+    toJSON s = object [ "path"   .= toJSON (formatObjectPath $ signalPath s)
+                      , "iface"  .= toJSON (formatInterfaceName $ signalInterface s)
+                      , "member" .= toJSON (formatMemberName $ signalMember s)
+                      ]
 
 callback :: WebView -> Int -> Signal -> IO ()
 callback wk index sig = do
-    let result = signalBody sig
-    postGUIAsync $ webViewExecuteScript wk $ dbusCallback index result
+    postGUIAsync $ webViewExecuteScript wk $ dbusCallback index sig
 
-dbusCallback :: Int -> [Variant] -> String
-dbusCallback index params =
+dbusCallback :: Int -> Signal -> String
+dbusCallback index sig =
     "window.dbusCallbacks && "
-        ++ "window.dbusCallbacks[" ++ indexStr ++ "](" ++ resultStr ++ ")"
+        ++ "window.dbusCallbacks[" ++ indexStr ++ "](" ++ paramsStr ++ ")"
     where indexStr = show index
-          resultStr = intercalate "," paramsStr
-          paramsStr = map toJavaScript params
+          paramsStr = intercalate "," $ map (T.unpack . E.decodeUtf8) [signalStr, bodyStr]
+          signalStr = encode $ toJSON sig
+          bodyStr = encode $ toJSON $ signalBody sig
 
 dbusOverride :: WebView -> DBusState -> UriOverride
 dbusOverride wk dbus = withPrefix "dbus:" $ \path -> do
