@@ -5,10 +5,11 @@
  * The only exposed property, 'format', determines the
  * format (see Moment.js documentation) to display time and date.
  *
- * The plugin requires 'jquery', 'moment' and 'moment/lang' to be
- * available through RequireJS.
+ * The plugin requires 'jquery' and 'moment' to be available through
+ * RequireJS. For localization, 'moment' must include language data
+ * (this can be done by providing 'moment-with-langs.js' as 'moment').
  */
-define(['jquery', 'moment', 'moment/lang'], function ($, moment) {
+define(['jquery', 'moment'], function ($, moment) {
   var config = {
     format: 'llll'
   };
