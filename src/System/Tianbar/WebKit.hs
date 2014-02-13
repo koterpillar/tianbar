@@ -10,6 +10,7 @@ import DBus (fromVariant, Signal(..), parseObjectPath, parseInterfaceName, parse
 import DBus.Client (listen, matchAny, MatchRule(..), connectSession)
 
 import Graphics.UI.Gtk hiding (Signal)
+import Graphics.UI.Gtk.WebKit.GeolocationPolicyDecision
 import Graphics.UI.Gtk.WebKit.NetworkRequest
 import Graphics.UI.Gtk.WebKit.WebSettings
 import Graphics.UI.Gtk.WebKit.WebView
@@ -60,6 +61,12 @@ tianbarWebView = do
     wsettings <- webViewGetWebSettings wk
     set wsettings [webSettingsEnableUniversalAccessFromFileUris := True]
     webViewSetWebSettings wk wsettings
+
+    -- Enable geolocation
+    -- TODO: The signal handler is only ever called once
+    _ <- on wk geolocationPolicyDecisionRequested $ \_ decision -> do
+        putStrLn "allowing"
+        geolocationPolicyAllow decision
 
     -- Process the special overrides
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
