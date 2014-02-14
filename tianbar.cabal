@@ -13,7 +13,6 @@ category:            System
 build-type:          Simple
 cabal-version:       >=1.10
 data-files:          README.md
-                   , scripts/location_shim.js
                    , scripts/time.js
                    , scripts/weather.js
                    , scripts/xmonad.js

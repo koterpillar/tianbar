@@ -36,8 +36,6 @@ Quirks
   makes it easier to interact with various Web services. You can also make
   requests to the local files, for example, to extract CPU activity statistics
   from `/proc/stat`.
-* HTML5 geolocation API does not work. A shim, which uses
-  [freegeoip.net][freegeoip], is provided instead.
 * Interaction with the displayed Web page is limited. For example, text fields
   are not active if there are other windows on the screen, and opening new
   windows does not work.
