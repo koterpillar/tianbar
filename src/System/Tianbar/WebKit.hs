@@ -63,10 +63,9 @@ tianbarWebView = do
     webViewSetWebSettings wk wsettings
 
     -- Enable geolocation
-    -- TODO: The signal handler is only ever called once
     _ <- on wk geolocationPolicyDecisionRequested $ \_ decision -> do
-        putStrLn "allowing"
         geolocationPolicyAllow decision
+        return True
 
     -- Process the special overrides
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
