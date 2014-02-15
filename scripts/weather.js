@@ -1,50 +1,86 @@
 /*
- * Weather plugin using Yahoo! Weather API.
+ * Weather plugin using Open Weather Map.
  *
  * The plugin requires 'jquery' to be available through RequireJS.
  *
- * At least on webkit-0.12.4, geolocation needed by this plugin is not
+ * At least on webkit-0.12.5, geolocation needed by this plugin is not
  * functional, so location_shim.js is required to be loaded before.
  */
 define(['jquery'], function ($) {
-  var api_key = 'a54ebf597a8e77198d9a47c798d42c51';
-  var woeid;
+  var APPID = '41fff6331bf67509b73740427d14c562';
+
+  var SECOND = 1000; // ms
+  var MINUTE = 60 * SECOND;
+  var HOUR = 60 * MINUTE;
+
+  var coords;
+  var weather;
+  var forecast;
 
   function unescapeHTML(html) {
     return $('<span/>').html(html).text();
   }
 
+  function weatherIcon(icon) {
+    // TODO: Styles should not be explicitly specified here
+    // but are needed to make the image inline
+    return $('<img/>')
+      .attr('src', 'http://openweathermap.org/img/w/' + icon + '.png')
+      .addClass('weather-icon')
+      .css({
+        'height': '100%',
+        'display': 'inline',
+        'vertical-align': 'middle',
+      })
+      [0].outerHTML;
+  }
+
+  function weatherUrl(method) {
+    return [
+      'http://api.openweathermap.org/data/2.5/', method,
+      '?APPID=', APPID,
+      '&lat=', coords.latitude,
+      '&lon=', coords.longitude,
+      '&units=', 'metric',
+    ].join('');
+  }
+
   function updateWeather() {
-    $.ajax('http://weather.yahooapis.com/forecastrss?' +
-      'w=' + woeid + '&u=c')
-    .success(function (weather) {
-      var temp = $('condition', weather).attr('temp');
-      var units = $('units', weather).attr('temperature');
-      units = " &deg;" + units;
-      var forecast = $('forecast', weather).map(function (k, el) {
-        el = $(el);
-        return el.attr('day') + ": " + el.attr('text') + ", " +
-          el.attr('low') + "&ndash;" + el.attr('high') +
-          units;
-      });
-      forecast = Array.prototype.join.call(forecast, '&#13;');
-      $('.widget-weather').html(temp + units);
-      $('.widget-weather').attr('title', unescapeHTML(forecast));
+    $.ajax(weatherUrl('weather')).success(function (result) {
+      weather = result;
+      render();
     });
+  }
+
+  function updateForecast() {
+    $.ajax(weatherUrl('forecast')).success(function (result) {
+      forecast = result;
+      render();
+    });
+  }
+
+  function render() {
+    var text = [];
+    var tooltip = [];
+    if (weather) {
+      text.push(weatherIcon(weather.weather[0].icon));
+      text.push(Math.round(weather.main.temp));
+      text.push(" &deg;C");
+    }
+    if (forecast) {
+      // TODO: parse and format per-day (?) forecast
+    }
+    $('.widget-weather').html(text.join(''));
+    $('.widget-weather').attr('title', unescapeHTML(tooltip.join('')));
   }
 
   $(document).ready(function () {
     navigator.geolocation.getCurrentPosition(function (pos) {
-      $.getJSON('http://query.yahooapis.com/v1/public/yql?q=' +
-        'select%20place.woeid%20from%20flickr.places%20where%20' +
-        'lat%3D' + pos.coords.latitude + '%20and%20' +
-        'lon%3D' + pos.coords.longitude + '%20and%20' +
-        'api_key=%22' + api_key + '%22&format=json')
-      .success(function (yloc) {
-        woeid = yloc.query.results.places.place.woeid;
-        updateWeather();
-        setInterval(updateWeather, 5 * 60 * 1000);
-      });
+      coords = pos.coords;
+      updateWeather();
+      updateForecast();
+      setInterval(updateWeather, 10 * MINUTE);
+      setInterval(updateForecast, 3 * HOUR);
     });
   });
 });
