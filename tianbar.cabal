@@ -48,8 +48,8 @@ library
                      , xmonad
                      , xmonad-contrib
                      , utf8-string ==0.3.*
-                     , blaze-html ==0.5.*
-                     , blaze-markup ==0.5.*
+                     , blaze-html >=0.5 && <0.8
+                     , blaze-markup >=0.5 && <0.7
   hs-source-dirs:      src
   exposed-modules:     System.Tianbar.XMonadLog
   ghc-options: -Wall -rtsopts
