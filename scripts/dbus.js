@@ -21,7 +21,7 @@ define(['jquery'], function ($) {
           params[x] = match[x];
         }
       }
-      $.ajax('dbus:subscribe', {
+      $.ajax('dbus:listen', {
         data: params
       });
     }
