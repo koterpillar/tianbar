@@ -57,7 +57,7 @@ tianbarWebView = do
     -- Connect DBus listener, and reconnect on reloads
     dbus <- liftM DBusState $ connectSession >>= newMVar
 
-    _ <- on wk loadStarted $ \_ -> do
+    _ <- on wk loadStarted $ \_ ->
         modifyMVar_ (dbusClient dbus) $ \client -> do
             disconnect client
             connectSession

@@ -2,6 +2,7 @@
 module System.Tianbar.DBus where
 
 import Control.Concurrent.MVar
+import Control.Monad
 
 import Data.Aeson
 import Data.Int
@@ -48,7 +49,7 @@ instance ToJSON Signal where
                       ]
 
 callback :: WebView -> Int -> Signal -> IO ()
-callback wk index sig = do
+callback wk index sig =
     Gtk.postGUIAsync $ webViewExecuteScript wk $ dbusCallback index sig
 
 dbusCallback :: Int -> Signal -> String
@@ -62,7 +63,7 @@ dbusCallback index sig =
 
 dbusOverride :: WebView -> DBusState -> UriOverride
 dbusOverride wk dbus = withScheme "dbus:" $ \uri -> do
-    case (uriPath uri) of
+    case uriPath uri of
         "listen" -> dbusListen wk dbus uri
         _ -> return ()
     returnContent ""
@@ -77,6 +78,6 @@ dbusListen wk dbus uri = do
                            , matchInterface = M.lookup "iface" params >>= parseInterfaceName
                            , matchMember = M.lookup "member" params >>= parseMemberName
                            }
-    let (Just index) = M.lookup "index" params >>= (return . read)
+    let (Just index) = liftM read $ M.lookup "index" params
     withMVar (dbusClient dbus) $ \client ->
         listen client matcher $ callback wk index
