@@ -43,7 +43,7 @@ gsettingsUriOverride = withPrefix "gsettings:" $ \path -> do
     return $ "data:text/plain," ++ setting
 
 dataFileOverride :: UriOverride
-dataFileOverride = withPrefix "tianbar:" $ \path -> do
+dataFileOverride = withPrefix "tianbar:" $ \path ->
     liftM ("file://" ++) $ getDataFileName path
 
 uriOverrides :: [UriOverride]
