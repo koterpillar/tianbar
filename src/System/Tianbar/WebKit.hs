@@ -42,7 +42,7 @@ gsettingsUriOverride = withScheme "gsettings:" $ \uri -> do
 
 -- Data directory override
 dataFileOverride :: UriOverride
-dataFileOverride = withScheme "tianbar:" $ \uri -> do
+dataFileOverride = withScheme "tianbar:" $ \uri ->
     liftM ("file://" ++) $ getDataFileName $ uriPath uri
 
 tianbarWebView :: IO WebView

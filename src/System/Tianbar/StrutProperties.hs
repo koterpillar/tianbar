@@ -26,7 +26,7 @@ setStrutProperties gtkWindow (left, right, top, bottom,
                                 bottom_start_x, bottom_end_x) = do
     let ptrWin = unsafeCoerce gtkWindow :: ForeignPtr Window
     let fi = fromIntegral
-    withForeignPtr ptrWin $ \realPointer -> do
+    withForeignPtr ptrWin $ \realPointer ->
         return $ c_set_strut_properties realPointer (fi left) (fi right) (fi top) (fi bottom)
                                                         (fi left_start_y) (fi left_end_y)
                                                         (fi right_start_y) (fi right_end_y)
