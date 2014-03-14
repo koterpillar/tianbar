@@ -5,6 +5,8 @@ Tianbar is a status bar for XMonad and possibly similar window managers. It is
 using WebKit as its rendering engine, meaning that the entire look and feel is
 customizable using HTML, CSS and JavaScript.
 
+![Screenshot - left part](tianbar.png) ![Screenshot - right part](tianbar2.png)
+
 Usage
 -----
 
@@ -39,8 +41,7 @@ Quirks
 * HTML5 geolocation API does not work. A shim, which uses
   [freegeoip.net][freegeoip], is provided instead.
 * Interaction with the displayed Web page is limited. For example, text fields
-  are not active if there are other windows on the screen, and opening new
-  windows does not work.
+  are not active if there are other windows on the screen.
 
 Acknowledgements
 ----------------
