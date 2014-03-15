@@ -39,6 +39,7 @@ executable tianbar
   main-is:             Main.hs
   other-modules:       System.Tianbar
                      , System.Tianbar.Configuration
+                     , System.Tianbar.DBus
                      , System.Tianbar.StrutProperties
                      , System.Tianbar.Systray
                      , System.Tianbar.UriOverride
