@@ -4,10 +4,11 @@ module System.Tianbar.DBus where
 import Control.Concurrent.MVar
 import Control.Monad
 
-import Data.Aeson
+import Data.Aeson hiding (Array)
 import Data.Int
 import Data.List
 import Data.List.Split
+import qualified Data.Map as M
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as E
 import Data.Word
@@ -46,20 +47,39 @@ reloadDBusState dbus = do
         connectSystem
 
 instance ToJSON Variant where
-    toJSON v = let t = variantType v in
-        case t of
-            TypeBoolean -> let Just b = fromVariant v :: Maybe Bool in toJSON b
-            TypeString -> let Just s = fromVariant v :: Maybe String in toJSON s
-            TypeWord8 -> let Just i = fromVariant v :: Maybe Word8 in toJSON i
-            TypeWord16 -> let Just i = fromVariant v :: Maybe Word16 in toJSON i
-            TypeWord32 -> let Just i = fromVariant v :: Maybe Word32 in toJSON i
-            TypeWord64 -> let Just i = fromVariant v :: Maybe Word64 in toJSON i
-            TypeInt16 -> let Just i = fromVariant v :: Maybe Int16 in toJSON i
-            TypeInt32 -> let Just i = fromVariant v :: Maybe Int32 in toJSON i
-            TypeInt64 -> let Just i = fromVariant v :: Maybe Int64 in toJSON i
-            -- TODO: more types
-            _ -> error $ "Variant type not supported: "
-                      ++ show v ++ " (type: " ++ show t ++ ")"
+    toJSON v = case variantType v of
+        TypeBoolean -> let Just b = fromVariant v :: Maybe Bool in toJSON b
+        TypeWord8 -> let Just i = fromVariant v :: Maybe Word8 in toJSON i
+        TypeWord16 -> let Just i = fromVariant v :: Maybe Word16 in toJSON i
+        TypeWord32 -> let Just i = fromVariant v :: Maybe Word32 in toJSON i
+        TypeWord64 -> let Just i = fromVariant v :: Maybe Word64 in toJSON i
+        TypeInt16 -> let Just i = fromVariant v :: Maybe Int16 in toJSON i
+        TypeInt32 -> let Just i = fromVariant v :: Maybe Int32 in toJSON i
+        TypeInt64 -> let Just i = fromVariant v :: Maybe Int64 in toJSON i
+        TypeDouble -> let Just i = fromVariant v :: Maybe Double in toJSON i
+        TypeString -> let Just s = fromVariant v :: Maybe String in toJSON s
+
+        TypeSignature -> let Just s = fromVariant v :: Maybe Signature in
+            toJSON $ formatSignature s
+        TypeObjectPath -> let Just p = fromVariant v :: Maybe ObjectPath in
+            toJSON $ formatObjectPath p
+
+        TypeVariant -> let Just n = fromVariant v :: Maybe Variant in toJSON n
+        TypeArray _ -> let Just a = fromVariant v :: Maybe Array in
+            toJSON $ arrayItems a
+        TypeDictionary TypeString _ -> let Just d = fromVariant v :: Maybe Dictionary in
+            toJSON $ M.fromList $ map variantStringKey $ dictionaryItems d
+        TypeStructure _ -> let Just a = fromVariant v :: Maybe Structure in
+            toJSON $ structureItems a
+
+variantString :: Variant -> String
+variantString v = case variantType v of
+    TypeString -> fromVariant v
+    TypeVariant -> fromVariant v >>= variantString
+    _ -> show v
+
+variantStringKey :: (Variant, Variant) -> (String, Variant)
+variantStringKey (k, v) = (variantString k, v)
 
 instance ToJSON ObjectPath where
     toJSON = toJSON . formatObjectPath
