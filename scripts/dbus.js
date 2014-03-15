@@ -42,7 +42,8 @@ define(['jquery'], function ($) {
         $.ajax('dbus:' + busName + '/call', {
           data: data
         }).done(function (result) {
-          console.log(result);
+          result = JSON.parse(result);
+          handler(result);
         });
       }
     };

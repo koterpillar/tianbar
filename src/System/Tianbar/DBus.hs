@@ -67,16 +67,18 @@ instance ToJSON Variant where
         TypeVariant -> let Just n = fromVariant v :: Maybe Variant in toJSON n
         TypeArray _ -> let Just a = fromVariant v :: Maybe Array in
             toJSON $ arrayItems a
-        TypeDictionary TypeString _ -> let Just d = fromVariant v :: Maybe Dictionary in
+        TypeDictionary _ _ -> let Just d = fromVariant v :: Maybe Dictionary in
             toJSON $ M.fromList $ map variantStringKey $ dictionaryItems d
         TypeStructure _ -> let Just a = fromVariant v :: Maybe Structure in
             toJSON $ structureItems a
 
 variantString :: Variant -> String
-variantString v = case variantType v of
-    TypeString -> fromVariant v
-    TypeVariant -> fromVariant v >>= variantString
-    _ -> show v
+variantString v = s
+    where Just s = case variantType v of
+                       TypeString -> fromVariant v
+                       TypeVariant -> Just $ variantString v'
+                           where Just v' = fromVariant v
+                       _ -> Just $ show v
 
 variantStringKey :: (Variant, Variant) -> (String, Variant)
 variantStringKey (k, v) = (variantString k, v)
