@@ -42,10 +42,44 @@ instance ToJSON Variant where
             _ -> error $ "Variant type not supported: "
                       ++ show v ++ " (type: " ++ show t ++ ")"
 
+instance ToJSON ObjectPath where
+    toJSON = toJSON . formatObjectPath
+
+instance ToJSON InterfaceName where
+    toJSON = toJSON . formatInterfaceName
+
+instance ToJSON MemberName where
+    toJSON = toJSON . formatMemberName
+
 instance ToJSON Signal where
-    toJSON s = object [ "path"   .= toJSON (formatObjectPath $ signalPath s)
-                      , "iface"  .= toJSON (formatInterfaceName $ signalInterface s)
-                      , "member" .= toJSON (formatMemberName $ signalMember s)
+    toJSON s = object [ "path"   .= toJSON (signalPath s)
+                      , "iface"  .= toJSON (signalInterface s)
+                      , "member" .= toJSON (signalMember s)
+                      ]
+
+instance ToJSON ErrorName where
+    toJSON = toJSON . formatErrorName
+
+instance ToJSON Serial where
+    toJSON = toJSON . serialValue
+
+instance ToJSON BusName where
+    toJSON = toJSON . formatBusName
+
+instance ToJSON MethodError where
+    toJSON e = object [ "name"        .= toJSON (methodErrorName e)
+                      , "serial"      .= toJSON (methodErrorSerial e)
+                      , "sender"      .= toJSON (methodErrorSender e)
+                      , "destination" .= toJSON (methodErrorDestination e)
+                      , "body"        .= toJSON (methodErrorBody e)
+                      , "message"     .= toJSON (methodErrorMessage e)
+                      ]
+
+instance ToJSON MethodReturn where
+    toJSON r = object [ "serial"      .= toJSON (methodReturnSerial r)
+                      , "sender"      .= toJSON (methodReturnSender r)
+                      , "destination" .= toJSON (methodReturnDestination r)
+                      , "body"        .= toJSON (methodReturnBody r)
                       ]
 
 callback :: WebView -> Int -> Signal -> IO ()
@@ -61,13 +95,19 @@ dbusCallback index sig =
           signalStr = encode $ toJSON sig
           bodyStr = encode $ toJSON $ signalBody sig
 
-dbusOverride :: WebView -> DBusState -> UriOverride
-dbusOverride wk dbus = withScheme "dbus:" $ \uri -> do
-    case uriPath uri of
-        "listen" -> dbusListen wk dbus uri
-        _ -> return ()
-    returnContent ""
+returnJSON :: (ToJSON a) => a -> IO String
+returnJSON = returnContent . T.unpack . E.decodeUtf8 . encode . toJSON
 
+dbusOverride :: WebView -> DBusState -> UriOverride
+dbusOverride wk dbus = withScheme "dbus:" $ \uri ->
+    case uriPath uri of
+        "listen" -> do
+            dbusListen wk dbus uri
+            returnContent ""
+        "call" -> do
+            result <- dbusCall wk dbus uri
+            returnJSON result
+        _ -> returnContent ""
 
 dbusListen :: WebView -> DBusState -> URI -> IO ()
 dbusListen wk dbus uri = do
@@ -82,3 +122,6 @@ dbusListen wk dbus uri = do
     withMVar (dbusClient dbus) $ \client -> do
         _ <- addMatch client matcher $ callback wk index
         return ()
+
+dbusCall :: WebView -> DBusState -> URI -> IO (Either MethodError MethodReturn)
+dbusCall = undefined

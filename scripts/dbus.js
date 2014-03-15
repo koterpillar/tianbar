@@ -2,6 +2,14 @@
  * A plugin to receive DBus events.
  */
 define(['jquery'], function ($) {
+  function copyProperties(properties, from, to) {
+    $.each(properties, function(_, x) {
+      if (x in from) {
+        to[x] = from[x];
+      }
+    });
+  }
+
   return {
     /**
      * Listen for a particular DBus event.
@@ -11,18 +19,29 @@ define(['jquery'], function ($) {
     listen: function (match, handler) {
       window.dbusCallbacks = window.dbusCallbacks || [];
       var index = window.dbusCallbacks.push(handler) - 1;
-      var params = {
+      var data = {
         index: index
       };
-      for (var x in {'path': undefined,
-                     'iface': undefined,
-                     'member': undefined}) {
-        if (x in match) {
-          params[x] = match[x];
-        }
-      }
+      copyProperties(['path', 'iface', 'member'], match, data);
       $.ajax('dbus:listen', {
-        data: params
+        data: data
+      });
+    },
+
+    /**
+     * Call a DBus method.
+     * @param params {Object} Method call details ('path', 'iface', 'member',
+     * 'destination', 'body')
+     * @param handler {Function} The function to call upon receiving the result
+     */
+    call: function (params, handler) {
+      var data = {};
+      copyProperties(
+          ['path', 'iface', 'member', 'destination', 'body'], params, data);
+      $.ajax('dbus:call', {
+        data: data
+      }).done(function (result) {
+        console.log(result);
       });
     }
   };
