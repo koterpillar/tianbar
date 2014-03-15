@@ -8,6 +8,7 @@ import Data.Aeson
 import Data.Int
 import Data.List
 import qualified Data.Map as M
+import qualified Data.Maybe as MA
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as E
 import Data.Word
@@ -124,4 +125,13 @@ dbusListen wk dbus uri = do
         return ()
 
 dbusCall :: WebView -> DBusState -> URI -> IO (Either MethodError MethodReturn)
-dbusCall = undefined
+dbusCall _ dbus uri = do
+    print uri
+    let params = parseQuery uri
+    let path = MA.fromJust $ M.lookup "path" params >>= parseObjectPath
+    let iface = MA.fromJust $ M.lookup "iface" params >>= parseInterfaceName
+    let member = MA.fromJust $ M.lookup "member" params >>= parseMemberName
+    let mcall = (methodCall path iface member) { methodCallBody = [toVariant $ MA.fromJust $ M.lookup "body" params]
+        , methodCallDestination = M.lookup "destination" params >>= parseBusName
+        }
+    withMVar (dbusClient dbus) $ flip call mcall
