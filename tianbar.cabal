@@ -15,6 +15,7 @@ cabal-version:       >=1.10
 data-files:          README.md
                    , scripts/location_shim.js
                    , scripts/dbus.js
+                   , scripts/power.js
                    , scripts/time.js
                    , scripts/weather.js
                    , scripts/xmonad.js
