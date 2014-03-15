@@ -27,8 +27,7 @@ parseQuery = foldr (uncurry (M.insertWith (++))) M.empty
            . uriQuery
 
 lookupQueryParam :: String -> M.Map String [String] -> Maybe String
-lookupQueryParam key map = M.lookup key map >>= \value -> case value of
-    [] -> Nothing
+lookupQueryParam key queryMap = M.lookup key queryMap >>= \value -> case value of
     [v] -> Just v
     _ -> Nothing
 

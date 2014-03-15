@@ -8,7 +8,6 @@ import Data.Aeson
 import Data.Int
 import Data.List
 import Data.List.Split
-import qualified Data.Map as M
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as E
 import Data.Word
@@ -24,8 +23,27 @@ import Network.URI
 import System.Tianbar.UriOverride
 
 -- DBus callback override
-data DBusState = DBusState { dbusClient :: MVar Client
+
+type DBusClient = MVar Client
+
+data DBusState = DBusState { dbusSession :: DBusClient
+                           , dbusSystem :: DBusClient
                            }
+
+initDBusState :: IO DBusState
+initDBusState = do
+    session <- connectSession >>= newMVar
+    system <- connectSystem >>= newMVar
+    return $ DBusState session system
+
+reloadDBusState :: DBusState -> IO ()
+reloadDBusState dbus = do
+    modifyMVar_ (dbusSession dbus) $ \client -> do
+        disconnect client
+        connectSession
+    modifyMVar_ (dbusSystem dbus) $ \client -> do
+        disconnect client
+        connectSystem
 
 instance ToJSON Variant where
     toJSON v = let t = variantType v in
@@ -100,29 +118,35 @@ returnJSON :: (ToJSON a) => a -> IO String
 returnJSON = returnContent . T.unpack . E.decodeUtf8 . encode . toJSON
 
 dbusOverride :: WebView -> DBusState -> UriOverride
-dbusOverride wk dbus = withScheme "dbus:" $ \uri ->
-    case uriPath uri of
+dbusOverride wk dbus = withScheme "dbus:" $ \uri -> do
+    let [busName, busCall] = splitOn "/" (uriPath uri)
+    let bus = uriBus busName dbus
+    withMVar bus $ \client -> case busCall of
         "listen" -> do
-            dbusListen wk dbus uri
+            dbusListen wk client uri
             returnContent ""
         "call" -> do
-            result <- dbusCall wk dbus uri
+            result <- dbusCall wk client uri
             returnJSON result
         _ -> returnContent ""
 
-dbusListen :: WebView -> DBusState -> URI -> IO ()
-dbusListen wk dbus uri = do
+dbusListen :: WebView -> Client -> URI -> IO ()
+dbusListen wk client uri = do
     let params = parseQuery uri
     let matcher = matchRuleUri uri
     let (Just index) = liftM read $ lookupQueryParam "index" params
-    withMVar (dbusClient dbus) $ \client -> do
-        _ <- addMatch client matcher $ callback wk index
-        return ()
+    _ <- addMatch client matcher $ callback wk index
+    return ()
 
-dbusCall :: WebView -> DBusState -> URI -> IO (Either MethodError MethodReturn)
-dbusCall _ dbus uri = do
+dbusCall :: WebView -> Client -> URI -> IO (Either MethodError MethodReturn)
+dbusCall _ client uri = do
     let mcall = methodCallUri uri
-    withMVar (dbusClient dbus) $ flip call mcall
+    call client mcall
+
+uriBus :: String -> DBusState -> MVar Client
+uriBus "session" = dbusSession
+uriBus "system" = dbusSystem
+uriBus _ = error "Unknown bus"
 
 matchRuleUri :: URI -> MatchRule
 matchRuleUri uri = matchAny { matchSender = Nothing

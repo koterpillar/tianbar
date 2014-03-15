@@ -13,7 +13,7 @@
 define(['jquery', './dbus'], function ($, dbus) {
   var change = $.Callbacks();
 
-  dbus.listen(
+  dbus.session.listen(
     {
       path: '/org/xmonad/Log',
       iface: 'org.xmonad.Log',

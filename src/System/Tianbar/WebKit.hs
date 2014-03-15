@@ -1,13 +1,9 @@
 {-# Language OverloadedStrings #-}
 module System.Tianbar.WebKit where
 
-import Control.Concurrent.MVar
 import Control.Monad
 
 import Data.List.Split
-
--- TODO: Move state to DBus override
-import DBus.Client (connectSession, disconnect)
 
 import Graphics.UI.Gtk hiding (disconnect, Signal, Variant)
 import Graphics.UI.Gtk.WebKit.NetworkRequest
@@ -55,12 +51,9 @@ tianbarWebView = do
     webViewSetWebSettings wk wsettings
 
     -- Connect DBus listener, and reconnect on reloads
-    dbus <- liftM DBusState $ connectSession >>= newMVar
-
+    dbus <- initDBusState
     _ <- on wk loadStarted $ \_ ->
-        modifyMVar_ (dbusClient dbus) $ \client -> do
-            disconnect client
-            connectSession
+        reloadDBusState dbus
 
     -- Process the special overrides
     let allOverrides = mergeOverrides [ gsettingsUriOverride
