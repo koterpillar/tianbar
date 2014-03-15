@@ -41,6 +41,7 @@ executable tianbar
                      , System.Tianbar.Configuration
                      , System.Tianbar.StrutProperties
                      , System.Tianbar.Systray
+                     , System.Tianbar.UriOverride
                      , System.Tianbar.WebKit
   c-sources:           src/gdk_property_change_wrapper.c
   ghc-options:         -Wall -rtsopts -threaded
