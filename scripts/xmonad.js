@@ -5,9 +5,14 @@
  *
  * The status appears in elements matching class 'widget-xmonad'.
  *
+ * The 'change' callback ($.Callbacks) object is fired whenever the
+ * status changes.
+ *
  * The plugin requires 'jquery' to be available through RequireJS.
  */
 define(['jquery', './dbus'], function ($, dbus) {
+  var change = $.Callbacks();
+
   dbus.listen(
     {
       path: '/org/xmonad/Log',
@@ -17,6 +22,11 @@ define(['jquery', './dbus'], function ($, dbus) {
     function (signal, body) {
       var st = body[0];
       $('.widget-xmonad').html(st);
+      change.fire(st);
     }
   );
+
+  return {
+    change: change
+  };
 });
