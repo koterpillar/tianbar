@@ -7,8 +7,8 @@ import Control.Monad
 import Data.Aeson
 import Data.Int
 import Data.List
+import Data.List.Split
 import qualified Data.Map as M
-import qualified Data.Maybe as MA
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as E
 import Data.Word
@@ -113,25 +113,38 @@ dbusOverride wk dbus = withScheme "dbus:" $ \uri ->
 dbusListen :: WebView -> DBusState -> URI -> IO ()
 dbusListen wk dbus uri = do
     let params = parseQuery uri
-    let matcher = matchAny { matchSender = Nothing
-                           , matchDestination = Nothing
-                           , matchPath = M.lookup "path" params >>= parseObjectPath
-                           , matchInterface = M.lookup "iface" params >>= parseInterfaceName
-                           , matchMember = M.lookup "member" params >>= parseMemberName
-                           }
-    let (Just index) = liftM read $ M.lookup "index" params
+    let matcher = matchRuleUri uri
+    let (Just index) = liftM read $ lookupQueryParam "index" params
     withMVar (dbusClient dbus) $ \client -> do
         _ <- addMatch client matcher $ callback wk index
         return ()
 
 dbusCall :: WebView -> DBusState -> URI -> IO (Either MethodError MethodReturn)
 dbusCall _ dbus uri = do
-    print uri
-    let params = parseQuery uri
-    let path = MA.fromJust $ M.lookup "path" params >>= parseObjectPath
-    let iface = MA.fromJust $ M.lookup "iface" params >>= parseInterfaceName
-    let member = MA.fromJust $ M.lookup "member" params >>= parseMemberName
-    let mcall = (methodCall path iface member) { methodCallBody = [toVariant $ MA.fromJust $ M.lookup "body" params]
-        , methodCallDestination = M.lookup "destination" params >>= parseBusName
-        }
+    let mcall = methodCallUri uri
     withMVar (dbusClient dbus) $ flip call mcall
+
+matchRuleUri :: URI -> MatchRule
+matchRuleUri uri = matchAny { matchSender = Nothing
+                            , matchDestination = Nothing
+                            , matchPath = lookupQueryParam "path" params >>= parseObjectPath
+                            , matchInterface = lookupQueryParam "iface" params >>= parseInterfaceName
+                            , matchMember = lookupQueryParam "member" params >>= parseMemberName
+                            }
+    where params = parseQuery uri
+
+variantFromString :: String -> Variant
+variantFromString param = case splitOn ":" param of
+    ["string", str] -> toVariant str
+    _ -> error "Invalid variant string"
+
+methodCallUri :: URI -> MethodCall
+methodCallUri uri = (methodCall callPath iface member) { methodCallBody = body
+                                                       , methodCallDestination = dest
+                                                       }
+    where params = parseQuery uri
+          (Just callPath) = parseObjectPath $ getQueryParam "path" params
+          (Just iface) = parseInterfaceName $ getQueryParam "iface" params
+          (Just member) = parseMemberName $ getQueryParam "member" params
+          body = map variantFromString $ getQueryParams "body[]" params
+          dest = lookupQueryParam "destination" params >>= parseBusName
