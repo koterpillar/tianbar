@@ -1,0 +1,15 @@
+language: haskell
+
+before_install:
+  - cabal install gtk2hs-buildtools
+  - travis/cabal-apt-install $mode
+
+install:
+  - cabal configure -flib-Werror $mode
+  - cabal build
+
+script:
+  - cabal build
+
+env:
+  - mode="--enable-tests" script="cabal test --show-details=always"
