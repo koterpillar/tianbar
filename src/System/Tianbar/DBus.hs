@@ -79,5 +79,6 @@ dbusListen wk dbus uri = do
                            , matchMember = M.lookup "member" params >>= parseMemberName
                            }
     let (Just index) = liftM read $ M.lookup "index" params
-    withMVar (dbusClient dbus) $ \client ->
-        listen client matcher $ callback wk index
+    withMVar (dbusClient dbus) $ \client -> do
+        _ <- addMatch client matcher $ callback wk index
+        return ()
