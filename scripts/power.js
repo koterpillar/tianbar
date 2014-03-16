@@ -44,8 +44,8 @@ define(['jquery', './dbus'], function ($, dbus) {
         // TODO: externalize styling
         $.each(results, function (_, st) {
           st = st.body[0];
-          // TODO: distinguish AC properly
-          if (st.NativePath === 'AC') {
+          // Do not show AC power
+          if (st.Type === 1) {
             return;
           }
           widget.append(self.formatDevice(st));
