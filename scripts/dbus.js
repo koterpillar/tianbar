@@ -33,18 +33,26 @@ define(['jquery'], function ($) {
        * Call a DBus method.
        * @param params {Object} Method call details ('path', 'iface', 'member',
        * 'destination', 'body')
-       * @param handler {Function} The function to call upon receiving the result
+       * @return {Deferred} A promise to be fulfilled or rejected with the result
        */
       call: function (params, handler) {
         var data = {};
         copyProperties(
             ['path', 'iface', 'member', 'destination', 'body'], params, data);
+        var deferred = $.Deferred();
+
         $.ajax('dbus:' + busName + '/call', {
           data: data
         }).done(function (result) {
           result = JSON.parse(result);
-          handler(result);
+          if (result.Right) {
+            deferred.resolve(result.Right);
+          } else {
+            deferred.reject(result.Left);
+          }
         });
+
+        return deferred;
       }
     };
   }
