@@ -1,15 +1,18 @@
 language: haskell
 
 before_install:
-  - cabal install gtk2hs-buildtools
+  - cabal install gtk2hs-buildtools hlint
   - travis/cabal-apt-install $mode
+  - npm install jshint
 
 install:
   - cabal configure -flib-Werror $mode
-  - cabal build
 
 script:
+  - hlint src
+  - jshint scripts
   - cabal build
+  # TODO: tests
 
 env:
   - mode="--enable-tests" script="cabal test --show-details=always"
