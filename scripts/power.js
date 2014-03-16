@@ -4,6 +4,17 @@
  * Requires 'jquery' to be available through RequireJS.
  */
 define(['jquery', './dbus'], function ($, dbus) {
+  var self = {
+    /**
+     * Format an HTML element displaying the device status.
+     * @param st {Object} The device status, as returned by UPower
+     */
+    formatDevice: function (st) {
+      // TODO: better default formatting
+      return st.Percentage;
+    }
+  };
+
   function updatePower() {
     dbus.system.call({
       'destination': 'org.freedesktop.UPower',
@@ -37,7 +48,7 @@ define(['jquery', './dbus'], function ($, dbus) {
           if (st.NativePath === 'AC') {
             return;
           }
-          widget.append(st.Percentage);
+          widget.append(self.formatDevice(st));
         });
       });
     });
@@ -47,4 +58,6 @@ define(['jquery', './dbus'], function ($, dbus) {
     updatePower();
     setInterval(updatePower, 10000);
   });
+
+  return self;
 });
