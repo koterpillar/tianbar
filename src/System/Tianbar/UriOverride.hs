@@ -19,9 +19,13 @@ withScheme schemeMatch func uriStr
 mergeOverrides :: [UriOverride] -> UriOverride
 mergeOverrides overrides = foldr mplus Nothing . flip map overrides . flip ($)
 
+multiMap :: [(String, String)] -> M.Map String [String]
+multiMap = foldr addElement M.empty
+    where addElement (k, v) = M.insertWith (++) k [v]
+
 parseQuery :: URI -> M.Map String [String]
-parseQuery = foldr (uncurry (M.insertWith (++))) M.empty
-           . map ((\[a, b] -> (a, [b])) . map unEscapeString . splitOn "=")
+parseQuery = multiMap
+           . map ((\[a, b] -> (a, b)) . map unEscapeString . splitOn "=")
            . splitOn "&"
            . tail
            . uriQuery
