@@ -4,6 +4,7 @@ import Control.Monad
 
 import Data.List.Split
 import qualified Data.Map as M
+import Data.Maybe
 
 import Network.URI
 
@@ -18,12 +19,23 @@ withScheme schemeMatch func uriStr
 mergeOverrides :: [UriOverride] -> UriOverride
 mergeOverrides overrides = foldr mplus Nothing . flip map overrides . flip ($)
 
-parseQuery :: URI -> M.Map String String
-parseQuery = M.fromList
-           . map ((\[a, b] -> (a, unEscapeString b)) . splitOn "=")
+parseQuery :: URI -> M.Map String [String]
+parseQuery = foldr (uncurry (M.insertWith (++))) M.empty
+           . map ((\[a, b] -> (a, [b])) . map unEscapeString . splitOn "=")
            . splitOn "&"
            . tail
            . uriQuery
+
+lookupQueryParam :: String -> M.Map String [String] -> Maybe String
+lookupQueryParam key queryMap = M.lookup key queryMap >>= \value -> case value of
+    [v] -> Just v
+    _ -> Nothing
+
+getQueryParam :: String -> M.Map String [String] -> String
+getQueryParam key = fromJust . lookupQueryParam key
+
+getQueryParams :: String -> M.Map String [String] -> [String]
+getQueryParams key = fromMaybe [] . M.lookup key
 
 returnContent :: String -> IO String
 returnContent content = return $ "data:text/plain," ++ content
