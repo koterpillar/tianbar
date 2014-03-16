@@ -35,7 +35,7 @@ define(['jquery'], function ($) {
        * 'destination', 'body')
        * @return {Deferred} A promise to be fulfilled or rejected with the result
        */
-      call: function (params, handler) {
+      call: function (params) {
         var data = {};
         copyProperties(
             ['path', 'iface', 'member', 'destination', 'body'], params, data);

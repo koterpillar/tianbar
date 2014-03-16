@@ -19,7 +19,7 @@ define(['jquery', './dbus'], function ($, dbus) {
       iface: 'org.xmonad.Log',
       member: 'Update'
     },
-    function (signal, body) {
+    function (_, body) {
       var st = body[0];
       $('.widget-xmonad').html(st);
       change.fire(st);

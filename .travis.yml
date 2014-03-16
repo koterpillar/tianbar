@@ -10,7 +10,7 @@ install:
 
 script:
   - hlint src
-  - jshint scripts
+  - jshint --show-non-errors scripts
   - cabal build
   # TODO: tests
 

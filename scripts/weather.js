@@ -11,13 +11,9 @@
 define(['jquery', 'moment'], function ($, moment) {
   var APPID = '41fff6331bf67509b73740427d14c562';
 
-  var DETAILED_FORECAST = 4;
-
   var SECOND = 1000; // ms
   var MINUTE = 60 * SECOND;
   var HOUR = 60 * MINUTE;
-
-  var NEWLINE = '&#13;';
 
   var coords;
   var weather;
@@ -112,7 +108,6 @@ define(['jquery', 'moment'], function ($, moment) {
     if (forecastWindow !== null && !forecastWindow.closed) {
       var forecastBody = $(forecastWindow.document.body);
       forecastBody.empty();
-      var forecastHtml = [];
       if (forecast) {
         // Split forecast by days
         var days = [];
