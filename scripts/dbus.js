@@ -39,6 +39,8 @@ define(['jquery'], function ($) {
         var data = {};
         copyProperties(
             ['path', 'iface', 'member', 'destination', 'body'], params, data);
+        // Prevent caching
+        data.random = new Date().getTime();
         var deferred = $.Deferred();
 
         $.ajax('dbus:' + busName + '/call', {
