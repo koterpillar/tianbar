@@ -4,6 +4,7 @@
  * Requires 'jquery' to be available through RequireJS.
  */
 define(['jquery'], function ($) {
+  "use strict";
   var my_geolocation;
 
   navigator.geolocation = {};

@@ -2,6 +2,7 @@
  * A plugin to receive DBus events.
  */
 define(['jquery'], function ($) {
+  "use strict";
   function copyProperties(properties, from, to) {
     $.each(properties, function(_, x) {
       if (x in from) {

@@ -11,6 +11,7 @@
  * The plugin requires 'jquery' to be available through RequireJS.
  */
 define(['jquery', './dbus'], function ($, dbus) {
+  "use strict";
   var change = $.Callbacks();
 
   dbus.session.listen(

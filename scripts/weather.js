@@ -9,6 +9,7 @@
  * functional, so location_shim.js is required to be loaded before.
  */
 define(['jquery', 'moment'], function ($, moment) {
+  "use strict";
   var APPID = '41fff6331bf67509b73740427d14c562';
 
   var SECOND = 1000; // ms

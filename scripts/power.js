@@ -4,6 +4,7 @@
  * Requires 'jquery' to be available through RequireJS.
  */
 define(['jquery', './dbus'], function ($, dbus) {
+  "use strict";
   var self = {
     /**
      * Format an HTML element displaying the device status.
