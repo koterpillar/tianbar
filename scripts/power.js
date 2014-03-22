@@ -160,8 +160,8 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     }));
 
     var title = percentage + '%';
-    if (haveTTE) {
-      title += ' (' + moment.duration(timeToEmpty, 's').humanize() + ')';
+    if (st.TimeToEmpty !== 0) {
+      title += ' (' + moment.duration(st.TimeToEmpty, 's').humanize() + ')';
     }
     if (st.Type != self.DEVICE_TYPE.Battery) {
       title += '\n' + st.Vendor + ' ' + st.Model;
