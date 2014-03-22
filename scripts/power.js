@@ -18,6 +18,7 @@ define(['jquery', './dbus'], function ($, dbus) {
   self.SEGMENT_COLOR = '#888';
   self.OUTLINE_COLOR = 'black';
 
+  self.DEFAULT_TIME = 4 * self.HOUR;
   self.LOW_TIME = self.HOUR / 4;
 
   self.DEVICE_STATE = {
@@ -77,8 +78,6 @@ define(['jquery', './dbus'], function ($, dbus) {
    * @param st {Object} The device status, as returned by UPower
    */
   self.formatDevice = function (st) {
-    var DEFAULT_TIME = 4; // hours
-
     var percentage = st.Percentage;
 
     var timeToEmpty = st.TimeToEmpty;
@@ -92,17 +91,17 @@ define(['jquery', './dbus'], function ($, dbus) {
       if (percentage > 0) {
         timeToFull = timeToEmpty * (100 - percentage) / percentage;
       } else {
-        timeToFull = DEFAULT_TIME;
+        timeToFull = self.DEFAULT_TIME;
       }
     } else if (haveTTF && !haveTTE) {
       if (percentage < 100) {
         timeToEmpty = timeToFull * percentage / (100 - percentage);
       } else {
-        timeToFull = DEFAULT_TIME;
+        timeToFull = self.DEFAULT_TIME;
       }
     } else if (!haveTTF && !haveTTE) {
-      timeToEmpty = DEFAULT_TIME * percentage;
-      timeToFull = DEFAULT_TIME * (100 - percentage);
+      timeToEmpty = self.DEFAULT_TIME * percentage;
+      timeToFull = self.DEFAULT_TIME * (100 - percentage);
     }
 
     var hour_width = self.WIDTH * self.HOUR / (timeToEmpty + timeToFull);
