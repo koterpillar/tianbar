@@ -111,7 +111,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     var hour_width = self.WIDTH * self.HOUR / (timeToEmpty + timeToFull);
 
     var result = $('<div />').css({
-      'display': 'inline-block',
+      'display': 'inline-block'
     });
 
     var fillColor = timeToEmpty > self.LOW_TIME ?
