@@ -9,8 +9,8 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   self.HOUR = 3600;
 
   self.TERMINAL_HEIGHT = 6;
-  self.HEIGHT = 10;
-  self.WIDTH = 35;
+  self.HEIGHT = 8;
+  self.WIDTH = 25;
 
   self.FILL_COLOR = 'black';
   self.FILL_LOW_COLOR = 'red';
