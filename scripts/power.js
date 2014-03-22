@@ -1,9 +1,9 @@
 /*
  * A plugin to show the power (e.g. battery) state through UPower.
  *
- * Requires 'jquery' to be available through RequireJS.
+ * Requires 'jquery' and 'moment' to be available through RequireJS.
  */
-define(['jquery', './dbus'], function ($, dbus) {
+define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   var self = {};
 
   self.HOUR = 3600;
@@ -78,6 +78,10 @@ define(['jquery', './dbus'], function ($, dbus) {
    * @param st {Object} The device status, as returned by UPower
    */
   self.formatDevice = function (st) {
+    if (st.Type == self.DEVICE_TYPE.LinePower) {
+      return '';
+    }
+
     var percentage = st.Percentage;
 
     var timeToEmpty = st.TimeToEmpty;
@@ -109,8 +113,6 @@ define(['jquery', './dbus'], function ($, dbus) {
     var result = $('<div />').css({
       'display': 'inline-block',
     });
-
-    result.attr('title', percentage + '%');
 
     var fillColor = timeToEmpty > self.LOW_TIME ?
       self.FILL_COLOR : self.FILL_LOW_COLOR;
@@ -157,6 +159,16 @@ define(['jquery', './dbus'], function ($, dbus) {
       'margin-bottom': (self.HEIGHT - self.TERMINAL_HEIGHT) / 2
     }));
 
+    var title = percentage + '%';
+    if (haveTTE) {
+      title += ' (' + moment.duration(timeToEmpty, 's').humanize() + ')';
+    }
+    if (st.Type != self.DEVICE_TYPE.Battery) {
+      title += '\n' + st.Vendor + ' ' + st.Model;
+    }
+
+    result.attr('title', title);
+
     if (st.State === self.DEVICE_STATE.Charging) {
       result.append('⚡');
     }
@@ -192,10 +204,6 @@ define(['jquery', './dbus'], function ($, dbus) {
         widget.empty();
         $.each(results, function (_, st) {
           st = st.body[0];
-          // Only show batteries
-          if (st.Type !== self.DEVICE_TYPE.Battery) {
-            return;
-          }
           widget.append(self.formatDevice(st));
         });
       });
