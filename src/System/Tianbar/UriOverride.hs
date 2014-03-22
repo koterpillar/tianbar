@@ -23,23 +23,28 @@ multiMap :: [(String, String)] -> M.Map String [String]
 multiMap = foldr addElement M.empty
     where addElement (k, v) = M.insertWith (++) k [v]
 
-parseQuery :: URI -> M.Map String [String]
+type URIParams = M.Map String [String]
+
+parseQuery :: URI -> URIParams
 parseQuery = multiMap
            . map ((\[a, b] -> (a, b)) . map unEscapeString . splitOn "=")
            . splitOn "&"
            . tail
            . uriQuery
 
-lookupQueryParam :: String -> M.Map String [String] -> Maybe String
+lookupQueryParam :: String -> URIParams -> Maybe String
 lookupQueryParam key queryMap = M.lookup key queryMap >>= \value -> case value of
     [v] -> Just v
     _ -> Nothing
 
-getQueryParam :: String -> M.Map String [String] -> String
+getQueryParam :: String -> URIParams -> String
 getQueryParam key = fromJust . lookupQueryParam key
 
-getQueryParams :: String -> M.Map String [String] -> [String]
+getQueryParams :: String -> URIParams -> [String]
 getQueryParams key = fromMaybe [] . M.lookup key
 
+plainContent :: String -> String
+plainContent content = "data:text/plain," ++ content
+
 returnContent :: String -> IO String
-returnContent content = return $ "data:text/plain," ++ content
+returnContent = return . plainContent
