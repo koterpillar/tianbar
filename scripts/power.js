@@ -7,6 +7,8 @@ define(['jquery', './dbus'], function ($, dbus) {
   var self = {};
 
   self.HOUR = 3600;
+
+  self.TERMINAL_HEIGHT = 6;
   self.HEIGHT = 10;
   self.WIDTH = 35;
 
@@ -45,7 +47,7 @@ define(['jquery', './dbus'], function ($, dbus) {
     result.css({
       'display': 'inline-block',
       'background-color': color,
-      'width': width,
+      'width': width - (border ? 1 : 0),
       'height': self.HEIGHT,
       'border-top': '1px solid black',
       'border-bottom': '1px solid black',
@@ -54,7 +56,7 @@ define(['jquery', './dbus'], function ($, dbus) {
     });
     if (border) {
       result.css({
-        'margin-right': -1,
+        'padding-right': -1,
         'border-right-width': '1px',
         'border-right-style': 'solid',
         'border-right-color': border,
@@ -147,21 +149,23 @@ define(['jquery', './dbus'], function ($, dbus) {
       self.OUTLINE_COLOR
     ));
 
-    var TERMINAL_HEIGHT = 6;
     result.append($('<span>').css({
       'display': 'inline-block',
       'background-color': self.OUTLINE_COLOR,
       'width': 1,
-      'height': TERMINAL_HEIGHT,
-      'margin-left': 1,
-      'margin-top': (self.HEIGHT - TERMINAL_HEIGHT) / 2,
-      'margin-bottom': (self.HEIGHT - TERMINAL_HEIGHT) / 2
+      'height': self.TERMINAL_HEIGHT,
+      'margin-top': (self.HEIGHT - self.TERMINAL_HEIGHT) / 2,
+      'margin-bottom': (self.HEIGHT - self.TERMINAL_HEIGHT) / 2
     }));
+
+    if (st.State === self.DEVICE_STATE.Charging) {
+      result.append('⚡');
+    }
 
     return result;
   };
 
-  function updatePower() {
+  self.updatePower = function () {
     dbus.system.call({
       'destination': 'org.freedesktop.UPower',
       'path': '/org/freedesktop/UPower',
@@ -197,11 +201,11 @@ define(['jquery', './dbus'], function ($, dbus) {
         });
       });
     });
-  }
+  };
 
   $(document).ready(function () {
-    updatePower();
-    setInterval(updatePower, 10000);
+    self.updatePower();
+    setInterval(self.updatePower, 10000);
   });
 
   return self;
