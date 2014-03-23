@@ -176,6 +176,8 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     return result;
   };
 
+  self.updated = $.Callbacks();
+
   self.refresh = function () {
     dbus.system.call({
       'destination': 'org.freedesktop.UPower',
@@ -206,6 +208,8 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
           st = st.body[0];
           widget.append(self.formatDevice(st));
         });
+
+        self.updated.fire();
       });
     });
   };
