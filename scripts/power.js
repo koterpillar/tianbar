@@ -176,7 +176,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     return result;
   };
 
-  self.updatePower = function () {
+  self.refresh = function () {
     dbus.system.call({
       'destination': 'org.freedesktop.UPower',
       'path': '/org/freedesktop/UPower',
@@ -211,8 +211,13 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   };
 
   $(document).ready(function () {
-    self.updatePower();
-    setInterval(self.updatePower, 10000);
+    dbus.system.listen(
+      {
+        iface: 'org.freedesktop.UPower'
+      },
+      self.refresh
+    );
+    self.refresh();
   });
 
   return self;
