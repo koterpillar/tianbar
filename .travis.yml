@@ -6,7 +6,7 @@ before_install:
   - npm install jshint
 
 install:
-  - cabal configure -flib-Werror $mode
+  - cabal configure $mode
 
 script:
   - hlint src
