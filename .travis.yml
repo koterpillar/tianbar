@@ -15,4 +15,12 @@ script:
   # TODO: tests
 
 env:
-  - mode="--enable-tests" script="cabal test --show-details=always"
+  matrix:
+    - mode="--enable-tests" script="cabal test --show-details=always"
+  global:
+    secure: La3uBTMLW+gWTzRKsVmh+xN7PSVsGNHaqUIIXbEvv2gcdH5drCtsFS56VZ/bXR3IOpDhFX6+M6qXkMYlWcsCswvaecmjNwqOq8lc5WYjLdkinRugwgEVv5+tsS3Ybgnz+A6hvJIkNnkwHa8kSVA2ppOA6ZDteZguvDk73XGQPs0=
+
+after_success:
+  - rm dist/tianbar*.tar.gz
+  - cabal sdist
+  - cabal upload dist/tianbar*.tar.gz --username=AlexeyKotlyarov --password=$PASSWORD
