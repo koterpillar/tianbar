@@ -23,4 +23,4 @@ env:
 after_success:
   - rm dist/tianbar*.tar.gz
   - cabal sdist
-  - if [[ $TRAVIS_PULL_REQUEST == 'false' -a $TRAVIS_BRANCH == 'release' ]]; then cabal upload dist/tianbar*.tar.gz --username=AlexeyKotlyarov --password=$PASSWORD; fi
+  - if [ $TRAVIS_PULL_REQUEST == 'false' -a $TRAVIS_BRANCH == 'release' ]; then cabal upload dist/tianbar*.tar.gz --username=AlexeyKotlyarov --password=$PASSWORD; fi
