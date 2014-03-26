@@ -6,6 +6,8 @@ before_install:
   - npm install jshint
 
 install:
+  # Treat warnings as errors
+  - "sed -Ei 's/ghc-options: +/\0-Werror /' tianbar.cabal"
   - cabal configure $mode -fWerror
 
 script:
