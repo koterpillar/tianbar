@@ -6,6 +6,8 @@ before_install:
   - npm install jshint
 
 install:
+  # Treat warnings as errors
+  - "sed -Ei 's/ghc-options: +/\0-Werror /' tianbar.cabal"
   - cabal configure $mode -fWerror
 
 script:
@@ -21,6 +23,7 @@ env:
     secure: La3uBTMLW+gWTzRKsVmh+xN7PSVsGNHaqUIIXbEvv2gcdH5drCtsFS56VZ/bXR3IOpDhFX6+M6qXkMYlWcsCswvaecmjNwqOq8lc5WYjLdkinRugwgEVv5+tsS3Ybgnz+A6hvJIkNnkwHa8kSVA2ppOA6ZDteZguvDk73XGQPs0=
 
 after_success:
+  - git checkout -- tianbar.cabal
   - rm dist/tianbar*.tar.gz
   - cabal sdist
   - if [ $TRAVIS_PULL_REQUEST == 'false' -a $TRAVIS_BRANCH == 'release' ]; then cabal upload dist/tianbar*.tar.gz --username=AlexeyKotlyarov --password=$PASSWORD; fi
