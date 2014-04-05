@@ -42,6 +42,7 @@ executable tianbar
                      , System.Tianbar.Configuration
                      , System.Tianbar.DBus
                      , System.Tianbar.DBus.JSON
+                     , System.Tianbar.Socket
                      , System.Tianbar.StrutProperties
                      , System.Tianbar.Systray
                      , System.Tianbar.UriOverride

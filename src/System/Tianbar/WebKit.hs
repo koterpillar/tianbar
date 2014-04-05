@@ -19,6 +19,7 @@ import System.Process
 
 import System.Tianbar.Configuration
 import System.Tianbar.DBus
+import System.Tianbar.Socket
 import System.Tianbar.UriOverride
 
 import Paths_tianbar
@@ -59,6 +60,7 @@ tianbarWebView = do
     let allOverrides = mergeOverrides [ gsettingsUriOverride
                                       , dataFileOverride
                                       , dbusOverride wk dbus
+                                      , socketOverride
                                       ]
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
         Nothing -> return ()
