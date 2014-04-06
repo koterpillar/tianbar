@@ -19,6 +19,7 @@ data-files:          README.md
                    , scripts/socket.js
                    , scripts/tianbar.js
                    , scripts/time.js
+                   , scripts/volume.js
                    , scripts/weather.js
                    , scripts/xmonad.js
 

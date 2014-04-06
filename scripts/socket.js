@@ -14,7 +14,8 @@ define(['jquery', './tianbar'], function ($, tianbar) {
     $.ajax('socket:connect', {
       data: {
         callbackIndex: evt.index,
-        path: path
+        path: path,
+        random: new Date().getTime()
       }
     });
 
@@ -27,7 +28,8 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         $.ajax('socket:send', {
           data: {
             callbackIndex: evt.index,
-            data: data
+            data: data,
+            random: new Date().getTime()
           }
         });
       },
@@ -41,7 +43,8 @@ define(['jquery', './tianbar'], function ($, tianbar) {
       close: function () {
         $.ajax('socket:close', {
           data: {
-            callbackIndex: evt.index
+            callbackIndex: evt.index,
+            random: new Date().getTime()
           }
         });
       }
