@@ -30,7 +30,8 @@ instance Plugin SocketPlugin where
         -- TODO: resend data until done
         _ <- send sock dataToSend
         shutdown sock ShutdownSend
-        forkIO $ bracket_ (return ()) (close sock) $ forever $ do
+        let closeSocket = const (close sock) :: IOException -> IO ()
+        forkIO $ flip catch closeSocket $ forever $ do
             response <- recv sock 4096
             callback wk callbackIndex [response]
         returnContent ""
