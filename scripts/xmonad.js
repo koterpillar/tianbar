@@ -7,10 +7,8 @@
  *
  * The 'change' callback ($.Callbacks) object is fired whenever the
  * status changes.
- *
- * The plugin requires 'jquery' to be available through RequireJS.
  */
-define(['jquery', './dbus'], function ($, dbus) {
+define(['./vendor/jquery', './dbus'], function ($, dbus) {
   "use strict";
   var change = $.Callbacks();
 

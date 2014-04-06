@@ -19,6 +19,9 @@ data-files:          README.md
                    , scripts/time.js
                    , scripts/weather.js
                    , scripts/xmonad.js
+                   , scripts/vendor/jquery.js
+                   , scripts/vendor/moment.js
+                   , scripts/vendor/require.js
 
 executable tianbar
   default-language:    Haskell2010
