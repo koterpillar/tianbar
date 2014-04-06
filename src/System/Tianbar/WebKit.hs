@@ -31,7 +31,7 @@ data GSettings = GSettings
 
 instance Plugin GSettings where
     simpleInitialize = GSettings
-    simpleHandleRequest _ = withScheme "gsettings:" $ \uri -> do
+    handleRequest _ = withScheme "gsettings:" $ \uri -> do
         let [schema, key] = splitOn "/" $ uriPath uri
         setting <- gsettingsGet schema key
         returnContent setting
@@ -47,7 +47,7 @@ data DataDirectory = DataDirectory
 
 instance Plugin DataDirectory where
     simpleInitialize = DataDirectory
-    simpleHandleRequest _ = withScheme "tianbar:" $ \uri ->
+    handleRequest _ = withScheme "tianbar:" $ \uri ->
         liftM ("file://" ++) $ getDataFileName $ uriPath uri
 
 type AllPlugins = Combined GSettings (
@@ -66,17 +66,17 @@ tianbarWebView = do
     webViewSetWebSettings wk wsettings
 
     -- Initialize plugins, and re-initialize on reloads
-    plugins <- (initialize :: IO AllPlugins) >>= newMVar
+    plugins <- (initialize wk :: IO AllPlugins) >>= newMVar
     _ <- on wk loadStarted $ \_ -> modifyMVar_ plugins $ \oldPlugins -> do
         destroy oldPlugins
-        initialize
+        initialize wk
 
     -- Process the special overrides
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
         Nothing -> return ()
         (Just req) -> withMVar plugins $ \p -> do
             uri <- networkRequestGetUri req
-            let override_ = uri >>= handleRequest p wk
+            let override_ = uri >>= handleRequest p
             case override_ of
                 Nothing -> return ()
                 (Just override) -> override >>= networkRequestSetUri req

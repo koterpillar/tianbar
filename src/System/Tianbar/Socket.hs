@@ -12,7 +12,7 @@ data SocketPlugin = SocketPlugin
 instance Plugin SocketPlugin where
     simpleInitialize = SocketPlugin
 
-    simpleHandleRequest SocketPlugin = withScheme "socket:" $ \uri -> do
+    handleRequest SocketPlugin = withScheme "socket:" $ \uri -> do
         let socketPath = uriPath uri
         let params = parseQuery uri
         let Just request = lookupQueryParam "request" params

@@ -19,8 +19,8 @@ define(['jquery'], function ($) {
        * @param handler {Function} The function to call upon receiving the event
        */
       listen: function (match, handler) {
-        window.dbusCallbacks = window.dbusCallbacks || [];
-        var index = window.dbusCallbacks.push(handler) - 1;
+        window.tianbarCallbacks = window.tianbarCallbacks || [];
+        var index = window.tianbarCallbacks.push(handler) - 1;
         var data = {
           index: index
         };

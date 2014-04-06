@@ -5,13 +5,8 @@ module System.Tianbar.DBus where
 
 import Control.Monad
 
-import Data.Aeson hiding (Array)
-import Data.List
 import Data.List.Split
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.Encoding as E
 
-import qualified Graphics.UI.Gtk as Gtk
 import Graphics.UI.Gtk.WebKit.WebView
 
 import DBus
@@ -22,25 +17,26 @@ import Network.URI
 import System.Tianbar.DBus.JSON ()
 import System.Tianbar.Plugin
 
-data DBusPlugin = DBusPlugin { dbusSession :: Client
+data DBusPlugin = DBusPlugin { dbusHost :: WebView
+                             , dbusSession :: Client
                              , dbusSystem :: Client
                              }
 
 instance Plugin DBusPlugin where
-    initialize = do
+    initialize wk = do
         session <- connectSession
         system <- connectSystem
-        return $ DBusPlugin session system
+        return $ DBusPlugin wk session system
 
     destroy dbus = mapM_ disconnect [dbusSession dbus, dbusSystem dbus]
 
-    handleRequest dbus wk = withScheme "dbus:" $ \uri -> do
+    handleRequest dbus = withScheme "dbus:" $ \uri -> do
         let busCall = splitOn "/" (uriPath uri)
         let params = parseQuery uri
         case busCall of
             [bus, "listen"] -> do
                 let client = uriBus bus dbus
-                dbusListen wk client params
+                dbusListen (dbusHost dbus) client params
                 returnContent ""
             [bus, "call"] -> do
                 let client = uriBus bus dbus
@@ -48,27 +44,11 @@ instance Plugin DBusPlugin where
                 returnJSON result
             _ -> returnContent ""
 
-callback :: WebView -> Int -> Signal -> IO ()
-callback wk index sig =
-    Gtk.postGUIAsync $ webViewExecuteScript wk $ dbusCallback index sig
-
-dbusCallback :: Int -> Signal -> String
-dbusCallback index sig =
-    "window.dbusCallbacks && "
-        ++ "window.dbusCallbacks[" ++ indexStr ++ "](" ++ paramsStr ++ ")"
-    where indexStr = show index
-          paramsStr = intercalate "," $ map (T.unpack . E.decodeUtf8) [signalStr, bodyStr]
-          signalStr = encode $ toJSON sig
-          bodyStr = encode $ toJSON $ signalBody sig
-
-returnJSON :: (ToJSON a) => a -> IO String
-returnJSON = returnContent . T.unpack . E.decodeUtf8 . encode . toJSON
-
 dbusListen :: WebView -> Client -> URIParams -> IO ()
 dbusListen wk client params = do
     let matcher = matchRuleUri params
     let (Just index) = liftM read $ lookupQueryParam "index" params
-    _ <- addMatch client matcher $ callback wk index
+    _ <- addMatch client matcher $ \sig -> callback wk index [sig]
     return ()
 
 dbusCall :: Client -> URIParams -> IO (Either MethodError MethodReturn)

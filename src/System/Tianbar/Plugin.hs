@@ -1,9 +1,13 @@
 module System.Tianbar.Plugin where
 
+import Data.Aeson hiding (Array)
 import Data.List.Split
 import qualified Data.Map as M
 import Data.Maybe
+import qualified Data.Text.Lazy as T
+import qualified Data.Text.Lazy.Encoding as E
 
+import qualified Graphics.UI.Gtk as Gtk
 import Graphics.UI.Gtk.WebKit.WebView
 
 import Network.URI
@@ -11,19 +15,16 @@ import Network.URI
 type UriHandler = String -> Maybe (IO String)
 
 class Plugin p where
-    initialize :: IO p
-    initialize = return simpleInitialize
+    initialize :: WebView -> IO p
+    initialize _ = return simpleInitialize
 
     simpleInitialize :: p
 
     destroy :: p -> IO ()
     destroy _ = return ()
 
-    handleRequest :: p -> WebView -> UriHandler
-    handleRequest p _ = simpleHandleRequest p
-
-    simpleHandleRequest :: p -> UriHandler
-    simpleHandleRequest _ _ = Nothing
+    handleRequest :: p -> UriHandler
+    handleRequest _ _ = Nothing
 
 withScheme :: String -> (URI -> IO String) -> UriHandler
 withScheme schemeMatch func uriStr
@@ -60,3 +61,17 @@ plainContent content = "data:text/plain," ++ content
 
 returnContent :: String -> IO String
 returnContent = return . plainContent
+
+returnJSON :: (ToJSON a) => a -> IO String
+returnJSON = returnContent . T.unpack . E.decodeUtf8 . encode . toJSON
+
+callback :: ToJSON a => WebView -> Int -> a -> IO ()
+callback wk index param =
+    Gtk.postGUIAsync $ webViewExecuteScript wk $ callbackScript index param
+
+callbackScript :: ToJSON a => Int -> a -> String
+callbackScript index param =
+    "window.tianbarCallbacks && "
+        ++ "window.tianbarCallbacks[" ++ indexStr ++ "].apply(window, " ++ paramStr ++ ")"
+    where indexStr = show index
+          paramStr = T.unpack $ E.decodeUtf8 $ encode $ toJSON param
