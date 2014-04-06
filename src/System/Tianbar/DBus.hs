@@ -47,7 +47,7 @@ instance Plugin DBusPlugin where
 dbusListen :: WebView -> Client -> URIParams -> IO ()
 dbusListen wk client params = do
     let matcher = matchRuleUri params
-    let (Just index) = liftM read $ lookupQueryParam "index" params
+    let (Just index) = lookupQueryParam "index" params
     _ <- addMatch client matcher $ \sig -> callback wk index [sig]
     return ()
 

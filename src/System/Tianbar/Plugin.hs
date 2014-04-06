@@ -65,14 +65,17 @@ returnContent = return . plainContent
 returnJSON :: (ToJSON a) => a -> IO String
 returnJSON = returnContent . T.unpack . E.decodeUtf8 . encode . toJSON
 
-callback :: ToJSON a => WebView -> Int -> a -> IO ()
+callback :: (ToJSON i, ToJSON p) => WebView -> i -> p -> IO ()
 callback wk index param =
     Gtk.postGUIAsync $ webViewExecuteScript wk $ callbackScript index param
 
-callbackScript :: ToJSON a => Int -> a -> String
+callbackScript :: (ToJSON i, ToJSON p) => i -> p -> String
 callbackScript index param =
     "window.tianbarEvents && " ++ eventStr ++ " && "
         ++ eventStr ++ ".fire.apply(" ++ eventStr ++ ", " ++ paramStr ++ ")"
     where eventStr = "window.tianbarEvents[" ++ indexStr ++ "]"
-          indexStr = show index
-          paramStr = T.unpack $ E.decodeUtf8 $ encode $ toJSON param
+          indexStr = showJSON index
+          paramStr = showJSON param
+
+showJSON :: ToJSON a => a -> String
+showJSON = T.unpack . E.decodeUtf8 . encode . toJSON

@@ -16,6 +16,7 @@ data-files:          README.md
                    , scripts/location_shim.js
                    , scripts/dbus.js
                    , scripts/power.js
+                   , scripts/socket.js
                    , scripts/tianbar.js
                    , scripts/time.js
                    , scripts/weather.js
