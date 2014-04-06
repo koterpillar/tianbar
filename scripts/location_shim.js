@@ -1,7 +1,9 @@
 /*
  * Basic HTML5 geolocation shim.
+ *
+ * Requires 'jquery' to be available through RequireJS.
  */
-define(['./vendor/jquery'], function ($) {
+define(['jquery'], function ($) {
   "use strict";
   var my_geolocation;
 

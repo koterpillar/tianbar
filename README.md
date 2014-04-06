@@ -14,12 +14,16 @@ Tianbar will show `index.html` from its [XDG configuration directory][xdg]
 (usually `$HOME/.config/taffybar`). It it up to you to create that, add styles,
 widgets and other behavior.
 
-A collection of widgets written in JavaScript is bundled with Tianbar,
+Widgets
+-------
+
+A small collection of widgets written in JavaScript is bundled with Tianbar,
 see `scripts` directory. To include them on your page, use `tianbar:` URL
 scheme, e.g. `tianbar:scripts/time.js`.
 
-Widgets are defined using [RequireJS][requirejs]. For convenience, it is
-supplied with Tianbar as `tianbar:scripts/vendor/require.js`.
+Currently widgets require [jQuery][jquery] and [RequireJS][requirejs], and
+neither of those is distributed with Tianbar -- you will have to obtain them
+manually.
 
 XMonad integration
 ------------------
@@ -47,6 +51,7 @@ Haskell configuration and widgets and not yet having achieved functional parity
 with it.
 
 [freegeoip]: http://freegeoip.net/
+[jquery]: http://jquery.com/
 [requirejs]: http://requirejs.org/
 [taffybar]: https://github.com/travitch/taffybar
 [xdg]: http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html

@@ -1,10 +1,14 @@
 /*
  * Weather plugin using Open Weather Map.
  *
+ * The plugin requires 'jquery' and 'moment' to be available through
+ * RequireJS. For localization, 'moment' must include language data
+ * (this can be done by providing 'moment-with-langs.js' as 'moment').
+ *
  * At least on webkit-0.12.5, geolocation needed by this plugin is not
  * functional, so location_shim.js is required to be loaded before.
  */
-define(['./vendor/jquery', './vendor/moment'], function ($, moment) {
+define(['jquery', 'moment'], function ($, moment) {
   "use strict";
   var APPID = '41fff6331bf67509b73740427d14c562';
 

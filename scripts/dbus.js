@@ -1,7 +1,7 @@
 /*
  * A plugin to receive DBus events.
  */
-define(['./vendor/jquery'], function ($) {
+define(['jquery'], function ($) {
   "use strict";
   function copyProperties(properties, from, to) {
     $.each(properties, function(_, x) {

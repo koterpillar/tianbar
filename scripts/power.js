@@ -1,8 +1,9 @@
 /*
  * A plugin to show the power (e.g. battery) state through UPower.
+ *
+ * Requires 'jquery' and 'moment' to be available through RequireJS.
  */
-define(['./vendor/jquery', './vendor/moment', './dbus'],
-function ($, moment, dbus) {
+define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   "use strict";
 
   var self = {};
