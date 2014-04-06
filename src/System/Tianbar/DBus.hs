@@ -3,7 +3,6 @@ module System.Tianbar.DBus where
 
 -- DBus connectivity
 
-import Control.Concurrent.MVar
 import Control.Monad
 
 import Data.Aeson hiding (Array)
@@ -21,27 +20,33 @@ import DBus.Client
 import Network.URI
 
 import System.Tianbar.DBus.JSON ()
-import System.Tianbar.UriOverride
+import System.Tianbar.Plugin
 
-type DBusState = MVar DBusConn
+data DBusPlugin = DBusPlugin { dbusSession :: Client
+                             , dbusSystem :: Client
+                             }
 
-data DBusConn = DBusConn { dbusSession :: Client
-                         , dbusSystem :: Client
-                         }
+instance Plugin DBusPlugin where
+    initialize = do
+        session <- connectSession
+        system <- connectSystem
+        return $ DBusPlugin session system
 
-connectState :: IO DBusConn
-connectState = do
-    session <- connectSession
-    system <- connectSystem
-    return $ DBusConn session system
+    destroy dbus = mapM_ disconnect [dbusSession dbus, dbusSystem dbus]
 
-initDBusState :: IO DBusState
-initDBusState = connectState >>= newMVar
-
-reloadDBusState :: DBusState -> IO ()
-reloadDBusState state = modifyMVar_ state $ \dbus -> do
-    mapM_ disconnect [dbusSession dbus, dbusSystem dbus]
-    connectState
+    handleRequest dbus wk = withScheme "dbus:" $ \uri -> do
+        let busCall = splitOn "/" (uriPath uri)
+        let params = parseQuery uri
+        case busCall of
+            [bus, "listen"] -> do
+                let client = uriBus bus dbus
+                dbusListen wk client params
+                returnContent ""
+            [bus, "call"] -> do
+                let client = uriBus bus dbus
+                result <- dbusCall client params
+                returnJSON result
+            _ -> returnContent ""
 
 callback :: WebView -> Int -> Signal -> IO ()
 callback wk index sig =
@@ -59,21 +64,6 @@ dbusCallback index sig =
 returnJSON :: (ToJSON a) => a -> IO String
 returnJSON = returnContent . T.unpack . E.decodeUtf8 . encode . toJSON
 
-dbusOverride :: WebView -> DBusState -> UriOverride
-dbusOverride wk state = withScheme "dbus:" $ \uri -> do
-    let busCall = splitOn "/" (uriPath uri)
-    let params = parseQuery uri
-    case busCall of
-        [bus, "listen"] -> withMVar state $ \dbus -> do
-            let client = uriBus bus dbus
-            dbusListen wk client params
-            returnContent ""
-        [bus, "call"] -> withMVar state $ \dbus -> do
-            let client = uriBus bus dbus
-            result <- dbusCall client params
-            returnJSON result
-        _ -> returnContent ""
-
 dbusListen :: WebView -> Client -> URIParams -> IO ()
 dbusListen wk client params = do
     let matcher = matchRuleUri params
@@ -86,7 +76,7 @@ dbusCall client params = do
     let mcall = methodCallUri params
     call client mcall
 
-uriBus :: String -> DBusConn -> Client
+uriBus :: String -> DBusPlugin -> Client
 uriBus "session" = dbusSession
 uriBus "system" = dbusSystem
 uriBus _ = error "Unknown bus"

@@ -1,23 +1,35 @@
-module System.Tianbar.UriOverride where
-
-import Control.Monad
+module System.Tianbar.Plugin where
 
 import Data.List.Split
 import qualified Data.Map as M
 import Data.Maybe
 
+import Graphics.UI.Gtk.WebKit.WebView
+
 import Network.URI
 
-type UriOverride = String -> Maybe (IO String)
+type UriHandler = String -> Maybe (IO String)
 
-withScheme :: String -> (URI -> IO String) -> UriOverride
+class Plugin p where
+    initialize :: IO p
+    initialize = return simpleInitialize
+
+    simpleInitialize :: p
+
+    destroy :: p -> IO ()
+    destroy _ = return ()
+
+    handleRequest :: p -> WebView -> UriHandler
+    handleRequest p _ = simpleHandleRequest p
+
+    simpleHandleRequest :: p -> UriHandler
+    simpleHandleRequest _ _ = Nothing
+
+withScheme :: String -> (URI -> IO String) -> UriHandler
 withScheme schemeMatch func uriStr
     | uriScheme uri == schemeMatch = Just $ func uri
     | otherwise = Nothing
     where (Just uri) = parseURI uriStr
-
-mergeOverrides :: [UriOverride] -> UriOverride
-mergeOverrides overrides = foldr mplus Nothing . flip map overrides . flip ($)
 
 multiMap :: [(String, String)] -> M.Map String [String]
 multiMap = foldr addElement M.empty

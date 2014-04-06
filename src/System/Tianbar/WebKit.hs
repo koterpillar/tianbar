@@ -1,6 +1,7 @@
 {-# Language OverloadedStrings #-}
 module System.Tianbar.WebKit where
 
+import Control.Concurrent.MVar (modifyMVar_, newMVar, withMVar)
 import Control.Monad
 
 import Data.List.Split
@@ -20,27 +21,40 @@ import System.Process
 import System.Tianbar.Configuration
 import System.Tianbar.DBus
 import System.Tianbar.Socket
-import System.Tianbar.UriOverride
+import System.Tianbar.Plugin
+import System.Tianbar.Plugin.Combined
 
 import Paths_tianbar
 
--- GSettings URI override
+-- GSettings plugin
+data GSettings = GSettings
+
+instance Plugin GSettings where
+    simpleInitialize = GSettings
+    simpleHandleRequest _ = withScheme "gsettings:" $ \uri -> do
+        let [schema, key] = splitOn "/" $ uriPath uri
+        setting <- gsettingsGet schema key
+        returnContent setting
+
 gsettingsGet :: String -> String -> IO String
 gsettingsGet schema key = do
     output <- readProcess "gsettings" ["get", schema, key] []
     let len = length output
     return $ drop 1 $ take (len - 2) output
 
-gsettingsUriOverride :: UriOverride
-gsettingsUriOverride = withScheme "gsettings:" $ \uri -> do
-    let [schema, key] = splitOn "/" $ uriPath uri
-    setting <- gsettingsGet schema key
-    returnContent setting
-
 -- Data directory override
-dataFileOverride :: UriOverride
-dataFileOverride = withScheme "tianbar:" $ \uri ->
-    liftM ("file://" ++) $ getDataFileName $ uriPath uri
+data DataDirectory = DataDirectory
+
+instance Plugin DataDirectory where
+    simpleInitialize = DataDirectory
+    simpleHandleRequest _ = withScheme "tianbar:" $ \uri ->
+        liftM ("file://" ++) $ getDataFileName $ uriPath uri
+
+type AllPlugins = Combined GSettings (
+                  Combined DataDirectory (
+                  Combined SocketPlugin (
+                  Combined DBusPlugin
+                  Empty)))
 
 tianbarWebView :: IO WebView
 tianbarWebView = do
@@ -51,22 +65,18 @@ tianbarWebView = do
     set wsettings [webSettingsEnableUniversalAccessFromFileUris := True]
     webViewSetWebSettings wk wsettings
 
-    -- Connect DBus listener, and reconnect on reloads
-    dbus <- initDBusState
-    _ <- on wk loadStarted $ \_ ->
-        reloadDBusState dbus
+    -- Initialize plugins, and re-initialize on reloads
+    plugins <- (initialize :: IO AllPlugins) >>= newMVar
+    _ <- on wk loadStarted $ \_ -> modifyMVar_ plugins $ \oldPlugins -> do
+        destroy oldPlugins
+        initialize
 
     -- Process the special overrides
-    let allOverrides = mergeOverrides [ gsettingsUriOverride
-                                      , dataFileOverride
-                                      , dbusOverride wk dbus
-                                      , socketOverride
-                                      ]
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
         Nothing -> return ()
-        (Just req) -> do
+        (Just req) -> withMVar plugins $ \p -> do
             uri <- networkRequestGetUri req
-            let override_ = uri >>= allOverrides
+            let override_ = uri >>= handleRequest p wk
             case override_ of
                 Nothing -> return ()
                 (Just override) -> override >>= networkRequestSetUri req
