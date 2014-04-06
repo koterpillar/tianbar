@@ -21,11 +21,22 @@ define(['jquery', './socket'], function ($, socket) {
   uid().done(function (uid) {
     var pulseSocket = socket('/var/run/user/' + uid + '/pulse/cli');
     pulseSocket.recv.add(function (dump) {
-      var volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
+      var html = '';
+
       var mute = MUTE_RE.exec(dump)[1] === "on";
 
-      console.log(volume);
-      console.log(mute);
+      // TODO: Volume icons
+      html += '<';
+      if (mute) {
+        html += 'x';
+      } else {
+        var volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
+        for (var wave = 0; wave < volume; wave += 1/3) {
+          html += ')';
+        }
+      }
+
+      $('.widget-volume').html(html);
     });
     window.setInterval(function () {
       pulseSocket.send('dump\n');
