@@ -1,7 +1,7 @@
 /*
  * A plugin to receive DBus events.
  */
-define(['jquery'], function ($) {
+define(['jquery', './tianbar'], function ($, tianbar) {
   "use strict";
   function copyProperties(properties, from, to) {
     $.each(properties, function(_, x) {
@@ -17,17 +17,19 @@ define(['jquery'], function ($) {
        * Listen for a particular DBus event.
        * @param match {Object} DBus match conditions ('path', 'iface', 'member')
        * @param handler {Function} The function to call upon receiving the event
+       * @returns {Callbacks} A jQuery callback object
        */
-      listen: function (match, handler) {
-        window.tianbarCallbacks = window.tianbarCallbacks || [];
-        var index = window.tianbarCallbacks.push(handler) - 1;
+      listen: function (match) {
+        var evt = tianbar.createEvent();
         var data = {
-          index: index
+          index: evt.index
         };
         copyProperties(['path', 'iface', 'member'], match, data);
         $.ajax('dbus:' + busName + '/listen', {
           data: data
         });
+
+        return evt.callback;
       },
 
       /**

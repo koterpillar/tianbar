@@ -71,7 +71,8 @@ callback wk index param =
 
 callbackScript :: ToJSON a => Int -> a -> String
 callbackScript index param =
-    "window.tianbarCallbacks && "
-        ++ "window.tianbarCallbacks[" ++ indexStr ++ "].apply(window, " ++ paramStr ++ ")"
-    where indexStr = show index
+    "window.tianbarEvents && " ++ eventStr ++ " && "
+        ++ eventStr ++ ".fire.apply(" ++ eventStr ++ ", " ++ paramStr ++ ")"
+    where eventStr = "window.tianbarEvents[" ++ indexStr ++ "]"
+          indexStr = show index
           paramStr = T.unpack $ E.decodeUtf8 $ encode $ toJSON param
