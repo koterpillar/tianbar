@@ -38,8 +38,12 @@ define(['jquery', './socket'], function ($, socket) {
 
       $('.widget-volume').html(html);
     });
-    window.setInterval(function () {
+
+    function requestDump () {
       pulseSocket.send('dump\n');
-    }, 1000);
+    }
+
+    requestDump();
+    window.setInterval(requestDump, 1000);
   });
 });
