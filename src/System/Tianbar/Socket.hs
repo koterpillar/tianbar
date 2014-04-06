@@ -42,7 +42,7 @@ socketConnect sp params = do
     connect sock $ SockAddrUnix path
     -- TODO: replace with ByteStrings
     let closeSocket = const (close sock) :: IOException -> IO ()
-    forkIO $ flip catch closeSocket $ forever $ do
+    forkIO $ handle closeSocket $ forever $ do
         response <- recv sock 4096
         callback (spHost sp) callbackIndex [response]
     modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
