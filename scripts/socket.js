@@ -3,27 +3,48 @@
  */
 define(['jquery', './tianbar'], function ($, tianbar) {
   "use strict";
+  /**
+   * Connect to a UNIX domain socket.
+   * @param path {String} Socket path
+   * @return {Object} A socket object
+   */
   return function (path) {
     var evt = tianbar.createEvent();
 
-    var socketId;
+    $.ajax('socket:connect', {
+      data: {
+        callbackIndex: evt.index,
+        path: path
+      }
+    });
 
     return {
+      /**
+       * Send data to a socket.
+       * @param data {String} The data to send.
+       */
       send: function (data) {
-        // TODO: only sends data once
-        var connectCall = $.ajax('socket:connect', {
+        $.ajax('socket:send', {
           data: {
             callbackIndex: evt.index,
-            path: path,
             data: data
           }
         });
-        connectCall.done(function (result) {
-          socketId = result;
-        });
       },
-      recv: evt.callback
-      // TODO: close sockets
+      /**
+       * Event (jQuery.Callbacks) firing on received data.
+       */
+      recv: evt.callback,
+      /**
+       * Close a socket.
+       */
+      close: function () {
+        $.ajax('socket:close', {
+          data: {
+            callbackIndex: evt.index
+          }
+        });
+      }
     };
   };
 });
