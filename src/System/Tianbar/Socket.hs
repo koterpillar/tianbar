@@ -51,11 +51,13 @@ socketConnect sp params = do
 socketSend :: SocketPlugin -> URIParams -> IO String
 socketSend sp params = do
     let Just callbackIndex = lookupQueryParam "callbackIndex" params
-    Just sock <- withSocket sp callbackIndex
-
-    let Just dataToSend = lookupQueryParam "data" params
-    send sock dataToSend
-    returnContent ""
+    sock <- withSocket sp callbackIndex
+    case sock of
+        Nothing -> returnContent ""
+        Just sock' -> do
+            let Just dataToSend = lookupQueryParam "data" params
+            send sock' dataToSend
+            returnContent ""
 
 socketClose :: SocketPlugin -> URIParams -> IO String
 socketClose sp params = do
