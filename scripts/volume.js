@@ -21,22 +21,23 @@ define(['jquery', './socket'], function ($, socket) {
   uid().done(function (uid) {
     var pulseSocket = socket('/var/run/user/' + uid + '/pulse/cli');
     pulseSocket.recv.add(function (dump) {
-      var html = '';
-
       var mute = MUTE_RE.exec(dump)[1] === "on";
+      var volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
+
+      var widget = $('.widget-volume');
+      widget.empty();
 
       // TODO: Volume icons
-      html += '<';
+      var txt = '<';
       if (mute) {
-        html += 'x';
+        txt += 'x';
       } else {
-        var volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
         for (var wave = 0; wave < volume; wave += 1/3) {
-          html += ')';
+          txt += ')';
         }
       }
 
-      $('.widget-volume').html(html);
+      widget.append(txt);
     });
 
     function requestDump () {
@@ -44,6 +45,6 @@ define(['jquery', './socket'], function ($, socket) {
     }
 
     requestDump();
-    window.setInterval(requestDump, 1000);
+    window.setInterval(requestDump, 5000);
   });
 });
