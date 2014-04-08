@@ -69,6 +69,9 @@ define(['jquery', './socket'], function ($, socket) {
         }
       }
       widget.append(waves);
+
+      var percentage = volume.toFixed(2) * 100;
+      widget.attr('title', percentage + '%');
     });
 
     function requestDump () {
