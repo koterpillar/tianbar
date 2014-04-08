@@ -11,6 +11,8 @@ define(['jquery', './socket'], function ($, socket) {
 
   var MAX_VOLUME = 0x10000;
 
+  var WAVES = 5;
+
   function uid() {
     return $.ajax('/proc/self/status')
     .then(function (result) {
@@ -27,17 +29,46 @@ define(['jquery', './socket'], function ($, socket) {
       var widget = $('.widget-volume');
       widget.empty();
 
-      // TODO: Volume icons
-      var txt = '<';
+      var speaker = $('<div />').css({
+        'float': 'left',
+        'border-top': '4px solid transparent',
+        'border-bottom': '4px solid transparent',
+        'border-right': '5px solid black',
+        'margin-top': 5,
+        'margin-bottom': 5,
+        'margin-right': 2
+      }).append($('<div />').css({
+        'background': 'black',
+        'width': 4,
+        'height': 5
+      }));
+      widget.append(speaker);
+
+      var waves = $('<div />').css({
+        'float': 'left',
+        'height': '100%',
+        'margin-top': 5,
+        'margin-bottom': 5,
+        'width': 12
+      });
       if (mute) {
-        txt += 'x';
+        waves.append('x');
       } else {
-        for (var wave = 0; wave < volume; wave += 1/3) {
-          txt += ')';
+        for (var i = 0; i < volume * WAVES; i ++) {
+          var waveSize = 6 + i * 2;
+          var margin = 10 - waveSize / 2;
+          var wave = $('<div />').css({
+            'display': 'inline-block',
+            'width': 1,
+            'height': waveSize,
+            'margin': 1,
+            'background': 'black',
+            'margin-bottom': margin
+          });
+          waves.append(wave);
         }
       }
-
-      widget.append(txt);
+      widget.append(waves);
     });
 
     function requestDump () {
@@ -45,6 +76,6 @@ define(['jquery', './socket'], function ($, socket) {
     }
 
     requestDump();
-    window.setInterval(requestDump, 5000);
+    window.setInterval(requestDump, 1000);
   });
 });
