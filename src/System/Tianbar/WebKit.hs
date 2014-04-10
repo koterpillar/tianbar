@@ -36,7 +36,7 @@ instance Plugin GSettings where
     handleRequest _ = withScheme "gsettings:" $ \uri -> do
         let [schema, key] = splitOn "/" $ uriPath uri
         setting <- gsettingsGet schema key
-        returnContent setting
+        return $ Just $ plainContent setting
 
 gsettingsGet :: String -> String -> IO String
 gsettingsGet schema key = do
@@ -50,7 +50,7 @@ data DataDirectory = DataDirectory
 instance Plugin DataDirectory where
     initialize _ = return DataDirectory
     handleRequest _ = withScheme "tianbar:" $ \uri ->
-        liftM ("file://" ++) $ getDataFileName $ uriPath uri
+        liftM (Just . ("file://" ++)) $ getDataFileName $ uriPath uri
 
 type AllPlugins = Combined GSettings (
                   Combined DataDirectory (
@@ -77,9 +77,7 @@ tianbarWebView = do
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> void $ runMaybeT $ do
         req <- liftMT nreq
         uri <- MaybeT $ networkRequestGetUri req
-        handler <- liftIO $ withMVar plugins (return . handleRequest)
-        handled <- liftMT (handler uri)
-        override <- liftIO handled
+        override <- MaybeT $ withMVar plugins $ flip handleRequest uri
         liftIO $ networkRequestSetUri req override
 
     -- Handle new window creation

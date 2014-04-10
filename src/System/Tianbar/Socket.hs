@@ -28,16 +28,16 @@ instance Plugin SocketPlugin where
 
     destroy sp = withMVar (spSock sp) $ mapM_ close . M.elems
 
-    handleRequest sp = withScheme "socket:" $ \uri -> do
+    handleRequest sp = withScheme "socket:" $ \uri -> runMaybeT $ do
         let params = parseQuery uri
         case uriPath uri of
             "connect" -> socketConnect sp params
             "send" -> socketSend sp params
             "close" -> socketClose sp params
-            _ -> returnContent ""
+            _ -> error "Bad URI"
 
-socketConnect :: SocketPlugin -> URIParams -> IO String
-socketConnect sp params = handleBlank $ runMaybeT $ do
+socketConnect :: SocketPlugin -> URIParams -> MaybeT IO String
+socketConnect sp params = do
     callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
     socketPath <- liftMT $ lookupQueryParam "path" params
     liftIO $ do
@@ -50,8 +50,8 @@ socketConnect sp params = handleBlank $ runMaybeT $ do
         modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
     returnContent "ok"
 
-socketSend :: SocketPlugin -> URIParams -> IO String
-socketSend sp params = handleBlank $ runMaybeT $ do
+socketSend :: SocketPlugin -> URIParams -> MaybeT IO String
+socketSend sp params = do
     callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
     sock <- MaybeT $ withSocket sp callbackIndex
     dataToSend <- liftMT $ lookupQueryParam "data" params
@@ -59,8 +59,8 @@ socketSend sp params = handleBlank $ runMaybeT $ do
     _ <- liftIO $ send sock dataToSend
     returnContent "ok"
 
-socketClose :: SocketPlugin -> URIParams -> IO String
-socketClose sp params = handleBlank $ runMaybeT $ do
+socketClose :: SocketPlugin -> URIParams -> MaybeT IO String
+socketClose sp params = do
     callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
     sock <- MaybeT $ withSocket sp callbackIndex
 

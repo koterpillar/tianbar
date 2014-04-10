@@ -33,10 +33,10 @@ instance Plugin DBusPlugin where
 
     destroy dbus = mapM_ disconnect [dbusSession dbus, dbusSystem dbus]
 
-    handleRequest dbus = withScheme "dbus:" $ \uri -> do
+    handleRequest dbus = withScheme "dbus:" $ \uri -> runMaybeT $ do
         let busCall = splitOn "/" (uriPath uri)
         let params = parseQuery uri
-        handleBlank $ runMaybeT $ case busCall of
+        case busCall of
             [bus, "listen"] -> do
                 let client = uriBus bus dbus
                 dbusListen (dbusHost dbus) client params

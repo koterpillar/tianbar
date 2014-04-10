@@ -16,7 +16,7 @@ import Graphics.UI.Gtk.WebKit.WebView
 
 import Network.URI
 
-type UriHandler = String -> Maybe (IO String)
+type UriHandler = String -> IO (Maybe String)
 
 class Plugin p where
     initialize :: WebView -> IO p
@@ -25,12 +25,12 @@ class Plugin p where
     destroy _ = return ()
 
     handleRequest :: p -> UriHandler
-    handleRequest _ _ = Nothing
+    handleRequest _ _ = return Nothing
 
-withScheme :: String -> (URI -> IO String) -> UriHandler
+withScheme :: String -> (URI -> IO (Maybe String)) -> UriHandler
 withScheme schemeMatch func uriStr
-    | uriScheme uri == schemeMatch = Just $ func uri
-    | otherwise = Nothing
+    | uriScheme uri == schemeMatch = func uri
+    | otherwise = return Nothing
     where (Just uri) = parseURI uriStr
 
 multiMap :: [(String, String)] -> M.Map String [String]

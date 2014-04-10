@@ -15,9 +15,6 @@ instance (Plugin p, Plugin q) => Plugin (Combined p q) where
         where rp = handleRequest p s
               rq = handleRequest q s
 
-mergeOverrides :: [UriHandler] -> UriHandler
-mergeOverrides overrides = foldr mplus Nothing . flip map overrides . flip ($)
-
 data Empty = Empty
 
 instance Plugin Empty where
