@@ -32,7 +32,7 @@ import Paths_tianbar
 data GSettings = GSettings
 
 instance Plugin GSettings where
-    simpleInitialize = GSettings
+    initialize _ = return GSettings
     handleRequest _ = withScheme "gsettings:" $ \uri -> do
         let [schema, key] = splitOn "/" $ uriPath uri
         setting <- gsettingsGet schema key
@@ -48,7 +48,7 @@ gsettingsGet schema key = do
 data DataDirectory = DataDirectory
 
 instance Plugin DataDirectory where
-    simpleInitialize = DataDirectory
+    initialize _ = return DataDirectory
     handleRequest _ = withScheme "tianbar:" $ \uri ->
         liftM ("file://" ++) $ getDataFileName $ uriPath uri
 

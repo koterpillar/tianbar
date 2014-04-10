@@ -21,4 +21,4 @@ mergeOverrides overrides = foldr mplus Nothing . flip map overrides . flip ($)
 data Empty = Empty
 
 instance Plugin Empty where
-    simpleInitialize = Empty
+    initialize _ = return Empty

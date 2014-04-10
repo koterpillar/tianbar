@@ -20,9 +20,6 @@ type UriHandler = String -> Maybe (IO String)
 
 class Plugin p where
     initialize :: WebView -> IO p
-    initialize _ = return simpleInitialize
-
-    simpleInitialize :: p
 
     destroy :: p -> IO ()
     destroy _ = return ()
