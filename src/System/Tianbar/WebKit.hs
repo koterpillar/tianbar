@@ -86,7 +86,9 @@ tianbarWebView = do
         runMaybeT $ do
             req <- liftMT nreq
             uri <- MaybeT $ networkRequestGetUri req
-            override <- lift withMVar plugins $ flip handleRequest uri
+            handler <- liftIO $ withMVar plugins (return . handleRequest)
+            handled <- liftMT (handler uri)
+            override <- liftIO handled
             liftIO $ networkRequestSetUri req override
         return ()
 
