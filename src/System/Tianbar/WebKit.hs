@@ -3,6 +3,9 @@ module System.Tianbar.WebKit where
 
 import Control.Concurrent.MVar (modifyMVar_, newMVar, withMVar)
 import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.Maybe
 
 import Data.List.Split
 
@@ -56,6 +59,13 @@ type AllPlugins = Combined GSettings (
                   Combined DBusPlugin
                   Empty)))
 
+ifExists :: Monad m => (a -> m ()) -> Maybe a -> m ()
+ifExists op (Just val) = op val
+ifExists _ Nothing = return ()
+
+liftMT :: Monad m => Maybe a -> MaybeT m a
+liftMT = MaybeT . return
+
 tianbarWebView :: IO WebView
 tianbarWebView = do
     wk <- webViewNew
@@ -72,14 +82,13 @@ tianbarWebView = do
         initialize wk
 
     -- Process the special overrides
-    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
-        Nothing -> return ()
-        (Just req) -> withMVar plugins $ \p -> do
-            uri <- networkRequestGetUri req
-            let override_ = uri >>= handleRequest p
-            case override_ of
-                Nothing -> return ()
-                (Just override) -> override >>= networkRequestSetUri req
+    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> do
+        runMaybeT $ do
+            req <- liftMT nreq
+            uri <- MaybeT $ networkRequestGetUri req
+            override <- lift withMVar plugins $ flip handleRequest uri
+            liftIO $ networkRequestSetUri req override
+        return ()
 
     -- Handle new window creation
     _ <- on wk createWebView $ \_ -> do

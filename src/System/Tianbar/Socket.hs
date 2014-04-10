@@ -37,12 +37,11 @@ instance Plugin SocketPlugin where
 socketConnect :: SocketPlugin -> URIParams -> IO String
 socketConnect sp params = do
     let Just callbackIndex = lookupQueryParam "callbackIndex" params
-    let Just path = lookupQueryParam "path" params
+    let Just socketPath = lookupQueryParam "path" params
     sock <- socket AF_UNIX Stream defaultProtocol
-    connect sock $ SockAddrUnix path
-    -- TODO: replace with ByteStrings
+    connect sock $ SockAddrUnix socketPath
     let closeSocket = const (close sock) :: IOException -> IO ()
-    forkIO $ handle closeSocket $ forever $ do
+    _ <- forkIO $ handle closeSocket $ forever $ do
         response <- recv sock 4096
         callback (spHost sp) callbackIndex [response]
     modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
@@ -56,7 +55,8 @@ socketSend sp params = do
         Nothing -> returnContent ""
         Just sock' -> do
             let Just dataToSend = lookupQueryParam "data" params
-            send sock' dataToSend
+            -- TODO: resend until done
+            _ <- send sock' dataToSend
             returnContent ""
 
 socketClose :: SocketPlugin -> URIParams -> IO String
