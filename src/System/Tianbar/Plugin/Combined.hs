@@ -11,9 +11,11 @@ instance (Plugin p, Plugin q) => Plugin (Combined p q) where
 
     destroy (Combined p q) = destroy p >> destroy q
 
-    handleRequest (Combined p q) s = mplus rp rq
-        where rp = handleRequest p s
-              rq = handleRequest q s
+    handleRequest (Combined p q) s = do
+        rp <- handleRequest p s
+        case rp of
+            Just res -> return rp
+            Nothing -> handleRequest q s
 
 data Empty = Empty
 

@@ -49,8 +49,10 @@ data DataDirectory = DataDirectory
 
 instance Plugin DataDirectory where
     initialize _ = return DataDirectory
-    handleRequest _ = withScheme "tianbar:" $ \uri ->
-        liftM (Just . ("file://" ++)) $ getDataFileName $ uriPath uri
+    handleRequest _ = withScheme "tianbar:" $ \uri -> do
+        let path = uriPath uri
+        dataFile <- getDataFileName path
+        return $ Just $ "file://" ++ dataFile
 
 type AllPlugins = Combined GSettings (
                   Combined DataDirectory (
