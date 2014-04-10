@@ -82,15 +82,13 @@ tianbarWebView = do
         initialize wk
 
     -- Process the special overrides
-    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> do
-        runMaybeT $ do
-            req <- liftMT nreq
-            uri <- MaybeT $ networkRequestGetUri req
-            handler <- liftIO $ withMVar plugins (return . handleRequest)
-            handled <- liftMT (handler uri)
-            override <- liftIO handled
-            liftIO $ networkRequestSetUri req override
-        return ()
+    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> runMaybeT $ do
+        req <- liftMT nreq
+        uri <- MaybeT $ networkRequestGetUri req
+        handler <- liftIO $ withMVar plugins (return . handleRequest)
+        handled <- liftMT (handler uri)
+        override <- liftIO handled
+        liftIO $ networkRequestSetUri req override
 
     -- Handle new window creation
     _ <- on wk createWebView $ \_ -> do
