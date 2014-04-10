@@ -4,7 +4,6 @@ module System.Tianbar.WebKit where
 import Control.Concurrent.MVar (modifyMVar_, newMVar, withMVar)
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.Maybe
 
 import Data.List.Split
@@ -75,7 +74,7 @@ tianbarWebView = do
         initialize wk
 
     -- Process the special overrides
-    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> runMaybeT $ do
+    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> void $ runMaybeT $ do
         req <- liftMT nreq
         uri <- MaybeT $ networkRequestGetUri req
         handler <- liftIO $ withMVar plugins (return . handleRequest)

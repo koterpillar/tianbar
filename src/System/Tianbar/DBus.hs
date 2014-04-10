@@ -82,8 +82,8 @@ methodCallUri params = liftM setBodyDest $ methodCall <$> callPath <*> iface <*>
     where callPath = lookupQueryParam "path" params >>= parseObjectPath
           iface = lookupQueryParam "iface" params >>= parseInterfaceName
           member = lookupQueryParam "member" params >>= parseMemberName
-          setBodyDest call = call { methodCallBody = body
-                                  , methodCallDestination = dest
-                                  }
+          setBodyDest mcall = mcall { methodCallBody = body
+                                    , methodCallDestination = dest
+                                    }
           body = map variantFromString $ getQueryParams "body[]" params
           dest = lookupQueryParam "destination" params >>= parseBusName

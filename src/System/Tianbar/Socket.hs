@@ -9,7 +9,6 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
 
 import qualified Data.Map as M
-import Data.Maybe
 
 import Graphics.UI.Gtk.WebKit.WebView
 
