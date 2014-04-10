@@ -3,7 +3,10 @@ module System.Tianbar.DBus where
 
 -- DBus connectivity
 
+import Control.Applicative
 import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Maybe
 
 import Data.List.Split
 
@@ -33,7 +36,7 @@ instance Plugin DBusPlugin where
     handleRequest dbus = withScheme "dbus:" $ \uri -> do
         let busCall = splitOn "/" (uriPath uri)
         let params = parseQuery uri
-        case busCall of
+        handleBlank $ runMaybeT $ case busCall of
             [bus, "listen"] -> do
                 let client = uriBus bus dbus
                 dbusListen (dbusHost dbus) client params
@@ -42,19 +45,19 @@ instance Plugin DBusPlugin where
                 let client = uriBus bus dbus
                 result <- dbusCall client params
                 returnJSON result
-            _ -> returnContent ""
+            _ -> error "Invalid call"
 
-dbusListen :: WebView -> Client -> URIParams -> IO ()
+dbusListen :: WebView -> Client -> URIParams -> MaybeT IO ()
 dbusListen wk client params = do
     let matcher = matchRuleUri params
-    let (Just index) = lookupQueryParam "index" params
-    _ <- addMatch client matcher $ \sig -> callback wk index [sig]
+    index <- liftMT $ lookupQueryParam "index" params
+    _ <- liftIO $ addMatch client matcher $ \sig -> callback wk index [sig]
     return ()
 
-dbusCall :: Client -> URIParams -> IO (Either MethodError MethodReturn)
+dbusCall :: Client -> URIParams -> MaybeT IO (Either MethodError MethodReturn)
 dbusCall client params = do
-    let mcall = methodCallUri params
-    call client mcall
+    mcall <- liftMT $ methodCallUri params
+    liftIO $ call client mcall
 
 uriBus :: String -> DBusPlugin -> Client
 uriBus "session" = dbusSession
@@ -74,12 +77,13 @@ variantFromString param = case splitOn ":" param of
     ["string", str] -> toVariant str
     _ -> error "Invalid variant string"
 
-methodCallUri :: URIParams -> MethodCall
-methodCallUri params = (methodCall callPath iface member) { methodCallBody = body
-                                                          , methodCallDestination = dest
-                                                          }
-    where (Just callPath) = parseObjectPath $ getQueryParam "path" params
-          (Just iface) = parseInterfaceName $ getQueryParam "iface" params
-          (Just member) = parseMemberName $ getQueryParam "member" params
+methodCallUri :: URIParams -> Maybe MethodCall
+methodCallUri params = liftM setBodyDest $ methodCall <$> callPath <*> iface <*> member
+    where callPath = lookupQueryParam "path" params >>= parseObjectPath
+          iface = lookupQueryParam "iface" params >>= parseInterfaceName
+          member = lookupQueryParam "member" params >>= parseMemberName
+          setBodyDest call = call { methodCallBody = body
+                                  , methodCallDestination = dest
+                                  }
           body = map variantFromString $ getQueryParams "body[]" params
           dest = lookupQueryParam "destination" params >>= parseBusName

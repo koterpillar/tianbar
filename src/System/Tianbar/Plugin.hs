@@ -54,9 +54,6 @@ lookupQueryParam key queryMap = M.lookup key queryMap >>= \value -> case value o
     [v] -> Just v
     _ -> Nothing
 
-getQueryParam :: String -> URIParams -> String
-getQueryParam key = fromJust . lookupQueryParam key
-
 getQueryParams :: String -> URIParams -> [String]
 getQueryParams key = fromMaybe [] . M.lookup key
 
@@ -66,7 +63,7 @@ plainContent content = "data:text/plain," ++ content
 returnContent :: MonadIO m => String -> m String
 returnContent = return . plainContent
 
-returnJSON :: (ToJSON a) => a -> IO String
+returnJSON :: (MonadIO m, ToJSON a) => a -> m String
 returnJSON = returnContent . T.unpack . E.decodeUtf8 . encode . toJSON
 
 callback :: (ToJSON i, ToJSON p) => WebView -> i -> p -> IO ()
