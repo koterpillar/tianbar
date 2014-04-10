@@ -40,19 +40,18 @@ instance Plugin DBusPlugin where
             [bus, "listen"] -> do
                 let client = uriBus bus dbus
                 dbusListen (dbusHost dbus) client params
-                returnContent ""
+                returnContent "ok"
             [bus, "call"] -> do
                 let client = uriBus bus dbus
                 result <- dbusCall client params
                 returnJSON result
             _ -> error "Invalid call"
 
-dbusListen :: WebView -> Client -> URIParams -> MaybeT IO ()
+dbusListen :: WebView -> Client -> URIParams -> MaybeT IO SignalHandler
 dbusListen wk client params = do
     let matcher = matchRuleUri params
     index <- liftMT $ lookupQueryParam "index" params
-    _ <- liftIO $ addMatch client matcher $ \sig -> callback wk index [sig]
-    return ()
+    liftIO $ addMatch client matcher $ \sig -> callback wk index [sig]
 
 dbusCall :: Client -> URIParams -> MaybeT IO (Either MethodError MethodReturn)
 dbusCall client params = do

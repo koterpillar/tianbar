@@ -67,7 +67,7 @@ socketClose sp params = do
     liftIO $ do
         close sock
         modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
-    returnContent ""
+    returnContent "ok"
 
 withSocket :: SocketPlugin -> String -> IO (Maybe Socket)
 withSocket sp callbackIndex = withMVar (spSock sp) $ return . M.lookup callbackIndex
