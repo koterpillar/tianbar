@@ -59,13 +59,6 @@ type AllPlugins = Combined GSettings (
                   Combined DBusPlugin
                   Empty)))
 
-ifExists :: Monad m => (a -> m ()) -> Maybe a -> m ()
-ifExists op (Just val) = op val
-ifExists _ Nothing = return ()
-
-liftMT :: Monad m => Maybe a -> MaybeT m a
-liftMT = MaybeT . return
-
 tianbarWebView :: IO WebView
 tianbarWebView = do
     wk <- webViewNew

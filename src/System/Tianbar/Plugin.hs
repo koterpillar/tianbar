@@ -1,5 +1,9 @@
 module System.Tianbar.Plugin where
 
+import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Maybe
+
 import Data.Aeson hiding (Array)
 import Data.List.Split
 import qualified Data.Map as M
@@ -59,7 +63,7 @@ getQueryParams key = fromMaybe [] . M.lookup key
 plainContent :: String -> String
 plainContent content = "data:text/plain," ++ content
 
-returnContent :: String -> IO String
+returnContent :: MonadIO m => String -> m String
 returnContent = return . plainContent
 
 returnJSON :: (ToJSON a) => a -> IO String
@@ -79,3 +83,9 @@ callbackScript index param =
 
 showJSON :: ToJSON a => a -> String
 showJSON = T.unpack . E.decodeUtf8 . encode . toJSON
+
+liftMT :: Monad m => Maybe a -> MaybeT m a
+liftMT = MaybeT . return
+
+handleBlank :: IO (Maybe String) -> IO String
+handleBlank = liftM $ fromMaybe (plainContent "")

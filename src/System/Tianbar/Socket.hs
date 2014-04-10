@@ -5,8 +5,11 @@ module System.Tianbar.Socket where
 import Control.Exception
 import Control.Concurrent
 import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Maybe
 
 import qualified Data.Map as M
+import Data.Maybe
 
 import Graphics.UI.Gtk.WebKit.WebView
 
@@ -35,37 +38,36 @@ instance Plugin SocketPlugin where
             _ -> returnContent ""
 
 socketConnect :: SocketPlugin -> URIParams -> IO String
-socketConnect sp params = do
-    let Just callbackIndex = lookupQueryParam "callbackIndex" params
-    let Just socketPath = lookupQueryParam "path" params
-    sock <- socket AF_UNIX Stream defaultProtocol
-    connect sock $ SockAddrUnix socketPath
-    let closeSocket = const (close sock) :: IOException -> IO ()
-    _ <- forkIO $ handle closeSocket $ forever $ do
-        response <- recv sock 4096
-        callback (spHost sp) callbackIndex [response]
-    modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
-    returnContent ""
+socketConnect sp params = handleBlank $ runMaybeT $ do
+    callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
+    socketPath <- liftMT $ lookupQueryParam "path" params
+    liftIO $ do
+        sock <- socket AF_UNIX Stream defaultProtocol
+        connect sock $ SockAddrUnix socketPath
+        let closeSocket = const (close sock) :: IOException -> IO ()
+        _ <- forkIO $ handle closeSocket $ forever $ do
+            response <- recv sock 4096
+            callback (spHost sp) callbackIndex [response]
+        modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
+    returnContent "ok"
 
 socketSend :: SocketPlugin -> URIParams -> IO String
-socketSend sp params = do
-    let Just callbackIndex = lookupQueryParam "callbackIndex" params
-    sock <- withSocket sp callbackIndex
-    case sock of
-        Nothing -> returnContent ""
-        Just sock' -> do
-            let Just dataToSend = lookupQueryParam "data" params
-            -- TODO: resend until done
-            _ <- send sock' dataToSend
-            returnContent ""
+socketSend sp params = handleBlank $ runMaybeT $ do
+    callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
+    sock <- MaybeT $ withSocket sp callbackIndex
+    dataToSend <- liftMT $ lookupQueryParam "data" params
+    -- TODO: resend until done
+    _ <- liftIO $ send sock dataToSend
+    returnContent "ok"
 
 socketClose :: SocketPlugin -> URIParams -> IO String
-socketClose sp params = do
-    let Just callbackIndex = lookupQueryParam "callbackIndex" params
-    Just sock <- withSocket sp callbackIndex
+socketClose sp params = handleBlank $ runMaybeT $ do
+    callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
+    sock <- MaybeT $ withSocket sp callbackIndex
 
-    close sock
-    modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
+    liftIO $ do
+        close sock
+        modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
     returnContent ""
 
 withSocket :: SocketPlugin -> String -> IO (Maybe Socket)
