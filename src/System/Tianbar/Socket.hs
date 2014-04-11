@@ -40,24 +40,25 @@ socketConnect :: SocketPlugin -> URIParams -> MaybeT IO String
 socketConnect sp params = do
     callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
     socketPath <- liftMT $ lookupQueryParam "path" params
-    liftIO $ do
+    liftIO $ handle showExc $ do
         sock <- socket AF_UNIX Stream defaultProtocol
         connect sock $ SockAddrUnix socketPath
-        let closeSocket = const (close sock) :: IOException -> IO ()
-        _ <- forkIO $ handle closeSocket $ forever $ do
+        let closeSocket = cleanup sp sock callbackIndex
+        _ <- forkIO $ void $ handle closeSocket $ forever $ do
             response <- recv sock 4096
             callback (spHost sp) callbackIndex [response]
         modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
-    returnContent "ok"
+        returnContent "ok"
 
 socketSend :: SocketPlugin -> URIParams -> MaybeT IO String
 socketSend sp params = do
     callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
     sock <- MaybeT $ withSocket sp callbackIndex
     dataToSend <- liftMT $ lookupQueryParam "data" params
-    -- TODO: resend until done
-    _ <- liftIO $ send sock dataToSend
-    returnContent "ok"
+    liftIO $ handle (cleanup sp sock callbackIndex) $ do
+        -- TODO: resend until done
+        _ <- send sock dataToSend
+        returnContent "ok"
 
 socketClose :: SocketPlugin -> URIParams -> MaybeT IO String
 socketClose sp params = do
@@ -68,6 +69,16 @@ socketClose sp params = do
         close sock
         modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
     returnContent "ok"
+
+showExc :: IOException -> IO String
+showExc = return . show
+
+cleanup :: SocketPlugin -> Socket -> String -> IOException -> IO String
+cleanup sp sock callbackIndex exc = do
+    let ignore = const (return ()) :: IOException -> IO ()
+    handle ignore $ close sock
+    modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
+    showExc exc
 
 withSocket :: SocketPlugin -> String -> IO (Maybe Socket)
 withSocket sp callbackIndex = withMVar (spSock sp) $ return . M.lookup callbackIndex
