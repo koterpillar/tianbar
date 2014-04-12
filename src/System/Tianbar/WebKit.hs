@@ -6,8 +6,6 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
 
-import Data.List.Split
-
 import Graphics.UI.Gtk hiding (disconnect, Signal, Variant)
 import Graphics.UI.Gtk.WebKit.NetworkRequest
 import Graphics.UI.Gtk.WebKit.WebSettings
@@ -15,45 +13,15 @@ import Graphics.UI.Gtk.WebKit.WebView
 import Graphics.UI.Gtk.WebKit.WebWindowFeatures
 
 import Network.Socket
-import Network.URI
 
 import System.Environment.XDG.BaseDir
-
-import System.Process
 
 import System.Tianbar.Configuration
 import System.Tianbar.DBus
 import System.Tianbar.Socket
 import System.Tianbar.Plugin
+import System.Tianbar.Plugin.Basic
 import System.Tianbar.Plugin.Combined
-
-import Paths_tianbar
-
--- GSettings plugin
-data GSettings = GSettings
-
-instance Plugin GSettings where
-    initialize _ = return GSettings
-    handleRequest _ = withScheme "gsettings:" $ \uri -> do
-        let [schema, key] = splitOn "/" $ uriPath uri
-        setting <- gsettingsGet schema key
-        return $ Just $ plainContent setting
-
-gsettingsGet :: String -> String -> IO String
-gsettingsGet schema key = do
-    output <- readProcess "gsettings" ["get", schema, key] []
-    let len = length output
-    return $ drop 1 $ take (len - 2) output
-
--- Data directory override
-data DataDirectory = DataDirectory
-
-instance Plugin DataDirectory where
-    initialize _ = return DataDirectory
-    handleRequest _ = withScheme "tianbar:" $ \uri -> do
-        let filePath = uriPath uri
-        dataFile <- getDataFileName filePath
-        return $ Just $ "file://" ++ dataFile
 
 type AllPlugins = Combined GSettings (
                   Combined DataDirectory (
