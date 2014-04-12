@@ -59,6 +59,7 @@ instance ToJSON Signal where
     toJSON s = object [ "path"   .= toJSON (signalPath s)
                       , "iface"  .= toJSON (signalInterface s)
                       , "member" .= toJSON (signalMember s)
+                      , "body"   .= toJSON (signalBody s)
                       ]
 
 instance ToJSON ErrorName where

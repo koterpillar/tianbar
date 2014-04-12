@@ -16,7 +16,10 @@ data-files:          README.md
                    , scripts/location_shim.js
                    , scripts/dbus.js
                    , scripts/power.js
+                   , scripts/socket.js
+                   , scripts/tianbar.js
                    , scripts/time.js
+                   , scripts/volume.js
                    , scripts/weather.js
                    , scripts/xmonad.js
 
@@ -33,6 +36,7 @@ executable tianbar
                      , process ==1.1.*
                      , split ==0.2.*
                      , text ==0.11.*
+                     , transformers ==0.3.*
                      , webkit ==0.12.*
                      , xdg-basedir ==0.2.*
   pkgconfig-depends:   gtk+-2.0
@@ -42,9 +46,10 @@ executable tianbar
                      , System.Tianbar.Configuration
                      , System.Tianbar.DBus
                      , System.Tianbar.DBus.JSON
+                     , System.Tianbar.Socket
                      , System.Tianbar.StrutProperties
                      , System.Tianbar.Systray
-                     , System.Tianbar.UriOverride
+                     , System.Tianbar.Plugin
                      , System.Tianbar.WebKit
   c-sources:           src/gdk_property_change_wrapper.c
   ghc-options:         -Wall -rtsopts -threaded
