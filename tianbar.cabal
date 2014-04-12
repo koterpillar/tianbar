@@ -31,6 +31,7 @@ executable tianbar
                      , dbus >=0.10.7 && <0.11
                      , gtk ==0.12.*
                      , gtk-traymanager ==0.1.*
+                     , happstack-server == 7.3.*
                      , MissingH ==1.2.*
                      , network ==2.4.*
                      , process ==1.1.*
@@ -46,6 +47,7 @@ executable tianbar
                      , System.Tianbar.Configuration
                      , System.Tianbar.DBus
                      , System.Tianbar.DBus.JSON
+                     , System.Tianbar.Server
                      , System.Tianbar.Socket
                      , System.Tianbar.StrutProperties
                      , System.Tianbar.Systray

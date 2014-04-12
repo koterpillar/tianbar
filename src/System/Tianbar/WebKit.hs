@@ -14,6 +14,7 @@ import Graphics.UI.Gtk.WebKit.WebSettings
 import Graphics.UI.Gtk.WebKit.WebView
 import Graphics.UI.Gtk.WebKit.WebWindowFeatures
 
+import Network.Socket
 import Network.URI
 
 import System.Environment.XDG.BaseDir
@@ -126,8 +127,8 @@ loadIndexPage wk = do
     html <- readFile htmlFile
     webViewLoadHtmlString wk html $ "file://" ++ htmlFile
 
-tianbarWebkitNew :: IO Widget
-tianbarWebkitNew = do
+tianbarWebkitNew :: PortNumber -> IO Widget
+tianbarWebkitNew _ = do
     l <- tianbarWebView
 
     _ <- on l realize $ loadIndexPage l
