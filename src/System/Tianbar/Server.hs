@@ -5,28 +5,15 @@ module System.Tianbar.Server (
 -- Server to handle JS callbacks
 
 import Control.Concurrent
+import Control.Monad
 
-import Happstack.Server ( bindIPv4
-                        , Conf (..)
-                        , nullConf
-                        , simpleHTTPWithSocket
-                        , toResponse
-                        , ok
-                        )
+import Happstack.Server
 
 import Network.Socket
 
 import System.Tianbar.DBus
 import System.Tianbar.Socket
-import System.Tianbar.Plugin
 import System.Tianbar.Plugin.Basic
-import System.Tianbar.Plugin.Combined
-
-type AllPlugins = Combined GSettings (
-                  Combined DataDirectory (
-                  Combined SocketPlugin (
-                  Combined DBusPlugin
-                  Empty)))
 
 startServer :: IO PortNumber
 startServer = do
@@ -37,5 +24,10 @@ startServer = do
 runServer :: Socket -> IO ()
 runServer sock = do
     portNum <- socketPort sock
-    let conf = nullConf { port = fromIntegral portNum }
-    simpleHTTPWithSocket sock conf $ ok "Hello, World"
+    let conf = nullConf { port = fromIntegral portNum, logAccess = Just spy }
+    simpleHTTPWithSocket sock conf $ msum [ mzero
+                                          , dataDirectory
+                                          ]
+
+spy :: String -> String -> t -> String -> Int -> Integer -> String -> String -> IO ()
+spy _ _ _ rl _ _ _ _ = putStrLn rl

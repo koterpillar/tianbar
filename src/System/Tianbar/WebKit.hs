@@ -38,7 +38,7 @@ tianbarWebView portNum = do
             let uri' = uri { uriScheme = "http:"
                            , uriAuthority = Just URIAuth { uriUserInfo = ""
                                                          , uriRegName = "localhost"
-                                                         , uriPort = ":33333"
+                                                         , uriPort = ':' : show portNum
                                                          }
                            }
             liftIO $ networkRequestSetUri req $ show uri'
