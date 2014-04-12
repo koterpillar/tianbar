@@ -14,7 +14,7 @@ instance (Plugin p, Plugin q) => Plugin (Combined p q) where
     handleRequest (Combined p q) s = do
         rp <- handleRequest p s
         case rp of
-            Just res -> return rp
+            Just _ -> return rp
             Nothing -> handleRequest q s
 
 data Empty = Empty

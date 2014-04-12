@@ -39,7 +39,7 @@ instance Plugin DBusPlugin where
         case busCall of
             [bus, "listen"] -> do
                 let client = uriBus bus dbus
-                dbusListen (dbusHost dbus) client params
+                _ <- dbusListen (dbusHost dbus) client params
                 returnContent "ok"
             [bus, "call"] -> do
                 let client = uriBus bus dbus
