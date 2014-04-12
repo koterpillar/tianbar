@@ -19,6 +19,7 @@ import Network.URI
 
 import System.Tianbar.DBus.JSON ()
 import System.Tianbar.Plugin
+import System.Tianbar.Utils
 
 data DBusPlugin = DBusPlugin { dbusHost :: WebView
                              , dbusSession :: Client

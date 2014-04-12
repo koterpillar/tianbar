@@ -1,7 +1,6 @@
 {-# Language OverloadedStrings #-}
 module System.Tianbar.WebKit where
 
-import Control.Concurrent.MVar (modifyMVar_, newMVar, withMVar)
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
@@ -13,24 +12,15 @@ import Graphics.UI.Gtk.WebKit.WebView
 import Graphics.UI.Gtk.WebKit.WebWindowFeatures
 
 import Network.Socket
+import Network.URI
 
 import System.Environment.XDG.BaseDir
 
 import System.Tianbar.Configuration
-import System.Tianbar.DBus
-import System.Tianbar.Socket
-import System.Tianbar.Plugin
-import System.Tianbar.Plugin.Basic
-import System.Tianbar.Plugin.Combined
+import System.Tianbar.Utils
 
-type AllPlugins = Combined GSettings (
-                  Combined DataDirectory (
-                  Combined SocketPlugin (
-                  Combined DBusPlugin
-                  Empty)))
-
-tianbarWebView :: IO WebView
-tianbarWebView = do
+tianbarWebView :: PortNumber -> IO WebView
+tianbarWebView portNum = do
     wk <- webViewNew
 
     -- Enable AJAX access to all domains
@@ -38,22 +28,24 @@ tianbarWebView = do
     set wsettings [webSettingsEnableUniversalAccessFromFileUris := True]
     webViewSetWebSettings wk wsettings
 
-    -- Initialize plugins, and re-initialize on reloads
-    plugins <- (initialize wk :: IO AllPlugins) >>= newMVar
-    _ <- on wk loadStarted $ \_ -> modifyMVar_ plugins $ \oldPlugins -> do
-        destroy oldPlugins
-        initialize wk
-
     -- Process the special overrides
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> void $ runMaybeT $ do
         req <- liftMT nreq
-        uri <- MaybeT $ networkRequestGetUri req
-        override <- MaybeT $ withMVar plugins $ flip handleRequest uri
-        liftIO $ networkRequestSetUri req override
+        uriStr <- MaybeT $ networkRequestGetUri req
+        uri <- liftMT $ parseURI uriStr
+        when (uriScheme uri == "tianbar:") $ do
+            -- TODO: append something secret to the URI
+            let uri' = uri { uriScheme = "http:"
+                           , uriAuthority = Just URIAuth { uriUserInfo = ""
+                                                         , uriRegName = "localhost"
+                                                         , uriPort = ":33333"
+                                                         }
+                           }
+            liftIO $ networkRequestSetUri req $ show uri'
 
     -- Handle new window creation
     _ <- on wk createWebView $ \_ -> do
-        nwk <- tianbarWebView
+        nwk <- tianbarWebView portNum
 
         window <- windowNew
         containerAdd window nwk
@@ -96,8 +88,8 @@ loadIndexPage wk = do
     webViewLoadHtmlString wk html $ "file://" ++ htmlFile
 
 tianbarWebkitNew :: PortNumber -> IO Widget
-tianbarWebkitNew _ = do
-    l <- tianbarWebView
+tianbarWebkitNew portNum = do
+    l <- tianbarWebView portNum
 
     _ <- on l realize $ loadIndexPage l
 

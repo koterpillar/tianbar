@@ -2,7 +2,6 @@ module System.Tianbar.Plugin where
 
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Maybe
 
 import Data.Aeson hiding (Array)
 import Data.List.Split
@@ -77,9 +76,6 @@ callbackScript index param =
 
 showJSON :: ToJSON a => a -> String
 showJSON = T.unpack . E.decodeUtf8 . encode . toJSON
-
-liftMT :: Monad m => Maybe a -> MaybeT m a
-liftMT = MaybeT . return
 
 handleBlank :: IO (Maybe String) -> IO String
 handleBlank = liftM $ fromMaybe (plainContent "")

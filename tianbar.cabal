@@ -54,6 +54,7 @@ executable tianbar
                      , System.Tianbar.Plugin
                      , System.Tianbar.Plugin.Basic
                      , System.Tianbar.Plugin.Combined
+                     , System.Tianbar.Utils
                      , System.Tianbar.WebKit
   c-sources:           src/gdk_property_change_wrapper.c
   ghc-options:         -Wall -rtsopts -threaded

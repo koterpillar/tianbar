@@ -16,6 +16,7 @@ import Network.Socket
 import Network.URI
 
 import System.Tianbar.Plugin
+import System.Tianbar.Utils
 
 data SocketPlugin = SocketPlugin { spHost :: WebView
                                  , spSock :: MVar (M.Map String Socket)

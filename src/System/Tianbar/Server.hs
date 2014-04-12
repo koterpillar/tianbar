@@ -16,6 +16,18 @@ import Happstack.Server ( bindIPv4
 
 import Network.Socket
 
+import System.Tianbar.DBus
+import System.Tianbar.Socket
+import System.Tianbar.Plugin
+import System.Tianbar.Plugin.Basic
+import System.Tianbar.Plugin.Combined
+
+type AllPlugins = Combined GSettings (
+                  Combined DataDirectory (
+                  Combined SocketPlugin (
+                  Combined DBusPlugin
+                  Empty)))
+
 startServer :: IO PortNumber
 startServer = do
     sock <- bindIPv4 "127.0.0.1" $ fromIntegral aNY_PORT
