@@ -13,7 +13,6 @@ category:            System
 build-type:          Simple
 cabal-version:       >=1.10
 data-files:          README.md
-                   , scripts/location_shim.js
                    , scripts/dbus.js
                    , scripts/power.js
                    , scripts/socket.js
@@ -39,7 +38,7 @@ executable tianbar
                      , split ==0.2.*
                      , text ==0.11.*
                      , transformers ==0.3.*
-                     , webkit ==0.12.*
+                     , webkit >=0.12.6.1 && <0.13
                      , xdg-basedir ==0.2.*
   pkgconfig-depends:   gtk+-2.0
   hs-source-dirs:      src

@@ -7,6 +7,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
 
 import Graphics.UI.Gtk hiding (disconnect, Signal, Variant)
+import Graphics.UI.Gtk.WebKit.GeolocationPolicyDecision
 import Graphics.UI.Gtk.WebKit.NetworkRequest
 import Graphics.UI.Gtk.WebKit.WebSettings
 import Graphics.UI.Gtk.WebKit.WebView
@@ -29,6 +30,11 @@ tianbarWebView = do
     wsettings <- webViewGetWebSettings wk
     set wsettings [webSettingsEnableUniversalAccessFromFileUris := True]
     webViewSetWebSettings wk wsettings
+
+    -- Enable geolocation
+    _ <- on wk geolocationPolicyDecisionRequested $ \_ decision -> do
+        geolocationPolicyAllow decision
+        return True
 
     -- Initialize plugins, and re-initialize on reloads
     server <- startServer (callbacks wk) >>= newMVar
