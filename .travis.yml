@@ -14,7 +14,9 @@ script:
   - hlint src
   - jshint --show-non-errors scripts
   - cabal build
-  # TODO: tests
+  - cabal test
+  - cabal sdist
+  - cabal install dist/tianbar*.tar.gz
 
 env:
   matrix:
