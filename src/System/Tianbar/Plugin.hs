@@ -10,7 +10,6 @@ import Data.Maybe
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as E
 
-import qualified Graphics.UI.Gtk as Gtk
 import Graphics.UI.Gtk.WebKit.WebView
 
 import Network.URI
@@ -61,21 +60,6 @@ returnContent = return . plainContent
 
 returnJSON :: (MonadIO m, ToJSON a) => a -> m String
 returnJSON = returnContent . T.unpack . E.decodeUtf8 . encode . toJSON
-
-callback :: (ToJSON i, ToJSON p) => WebView -> i -> p -> IO ()
-callback wk index param =
-    Gtk.postGUIAsync $ webViewExecuteScript wk $ callbackScript index param
-
-callbackScript :: (ToJSON i, ToJSON p) => i -> p -> String
-callbackScript index param =
-    "window.tianbarEvents && " ++ eventStr ++ " && "
-        ++ eventStr ++ ".fire.apply(" ++ eventStr ++ ", " ++ paramStr ++ ")"
-    where eventStr = "window.tianbarEvents[" ++ indexStr ++ "]"
-          indexStr = showJSON index
-          paramStr = showJSON param
-
-showJSON :: ToJSON a => a -> String
-showJSON = T.unpack . E.decodeUtf8 . encode . toJSON
 
 handleBlank :: IO (Maybe String) -> IO String
 handleBlank = liftM $ fromMaybe (plainContent "")

@@ -3,7 +3,6 @@ module System.Tianbar where
 import Graphics.UI.Gtk hiding (Signal)
 
 import System.Tianbar.Configuration
-import System.Tianbar.Server
 import System.Tianbar.Systray
 import System.Tianbar.StrutProperties
 import System.Tianbar.WebKit
@@ -16,8 +15,6 @@ topStrut (Rectangle mX mY mW _) = (0, 0, h, 0, 0, 0, 0, 0, x, x + w, 0, 0)
 
 main :: IO ()
 main = do
-    serverPort <- startServer
-
     _ <- initGUI
 
     Just disp <- displayGetDefault
@@ -38,7 +35,7 @@ main = do
     box <- hBoxNew False widgetSpacing
     containerAdd window box
 
-    wk <- tianbarWebkitNew serverPort
+    wk <- tianbarWebkitNew
     boxPackStart box wk PackGrow 0
 
     tray <- systrayNew

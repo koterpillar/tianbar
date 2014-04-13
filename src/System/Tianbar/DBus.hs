@@ -1,89 +1,107 @@
 {-# Language OverloadedStrings #-}
-module System.Tianbar.DBus where
+{-# Language FlexibleInstances #-}
+{-# Language RankNTypes #-}
+module System.Tianbar.DBus (dbus) where
 
 -- DBus connectivity
 
-import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Maybe
 
+import Data.Aeson (encode)
 import Data.List.Split
+import Data.Maybe
 
-import Graphics.UI.Gtk.WebKit.WebView
+import Happstack.Server
 
 import DBus
 import DBus.Client
 
-import Network.URI
-
 import System.Tianbar.DBus.JSON ()
-import System.Tianbar.Plugin
-import System.Tianbar.Utils
+import System.Tianbar.Callbacks
 
-data DBusPlugin = DBusPlugin { dbusHost :: WebView
-                             , dbusSession :: Client
-                             , dbusSystem :: Client
-                             }
-
-instance Plugin DBusPlugin where
-    initialize wk = do
-        session <- connectSession
-        system <- connectSystem
-        return $ DBusPlugin wk session system
-
-    destroy dbus = mapM_ disconnect [dbusSession dbus, dbusSystem dbus]
-
-    handleRequest dbus = withScheme "dbus:" $ \uri -> runMaybeT $ do
-        let busCall = splitOn "/" (uriPath uri)
-        let params = parseQuery uri
-        case busCall of
-            [bus, "listen"] -> do
-                let client = uriBus bus dbus
-                _ <- dbusListen (dbusHost dbus) client params
-                returnContent "ok"
-            [bus, "call"] -> do
-                let client = uriBus bus dbus
-                result <- dbusCall client params
-                returnJSON result
-            _ -> error "Invalid call"
-
-dbusListen :: WebView -> Client -> URIParams -> MaybeT IO SignalHandler
-dbusListen wk client params = do
-    let matcher = matchRuleUri params
-    index <- liftMT $ lookupQueryParam "index" params
-    liftIO $ addMatch client matcher $ \sig -> callback wk index [sig]
-
-dbusCall :: Client -> URIParams -> MaybeT IO (Either MethodError MethodReturn)
-dbusCall client params = do
-    mcall <- liftMT $ methodCallUri params
-    liftIO $ call client mcall
-
-uriBus :: String -> DBusPlugin -> Client
-uriBus "session" = dbusSession
-uriBus "system" = dbusSystem
-uriBus _ = error "Unknown bus"
-
-matchRuleUri :: URIParams -> MatchRule
-matchRuleUri params = matchAny { matchSender = Nothing
-                               , matchDestination = Nothing
-                               , matchPath = lookupQueryParam "path" params >>= parseObjectPath
-                               , matchInterface = lookupQueryParam "iface" params >>= parseInterfaceName
-                               , matchMember = lookupQueryParam "member" params >>= parseMemberName
+data DBusPlugin c = DBusPlugin { dbusHost :: c
+                               , dbusSession :: Client
+                               , dbusSystem :: Client
                                }
+
+busNameMap :: forall c. [(String, DBusPlugin c -> Client)]
+busNameMap = [ ("session", dbusSession)
+             , ("system", dbusSystem)
+             ]
+
+-- TODO: Is IO needed twice?
+dbus :: Callbacks c => c -> IO (ServerPartT IO Response)
+dbus c = do
+    session <- connectSession
+    system <- connectSystem
+    return $ dbusHandler $ DBusPlugin c session system
+
+-- TODO: stopping?
+destroy :: DBusPlugin c -> IO ()
+destroy plugin = mapM_ disconnect [dbusSession plugin, dbusSystem plugin]
+
+dbusHandler :: Callbacks c => DBusPlugin c -> ServerPartT IO Response
+dbusHandler plugin = dir "dbus" $ msum [ busHandler plugin busName (bus plugin)
+                                       | (busName, bus) <- busNameMap
+                                       ]
+
+busHandler :: Callbacks c => DBusPlugin c -> String -> Client -> ServerPartT IO Response
+busHandler plugin busName bus = dir busName $ msum [ mzero
+                                                   , listenHandler plugin bus
+                                                   , callHandler plugin bus
+                                                   ]
+
+listenHandler :: Callbacks c => DBusPlugin c -> Client -> ServerPartT IO Response
+listenHandler plugin client = dir "listen" $ withData $ \matcher -> do
+    nullDir
+    index <- look "index"
+    _ <- liftIO $ addMatch client matcher $ \sig -> callback (dbusHost plugin) index [sig]
+    return $ toResponse ("ok" :: String)
+
+callHandler :: DBusPlugin c -> Client -> ServerPartT IO Response
+callHandler _ client = dir "call" $ withData $ \mcall -> do
+    nullDir
+    res <- liftIO $ call client mcall
+    return $ toResponse $ encode res
+
+instance FromData MatchRule where
+    fromData = do
+        objPath <- fromData
+        iface <- fromData
+        memberName <- fromData
+        return $ matchAny { matchSender = Nothing
+                          , matchDestination = Nothing
+                          , matchPath = objPath
+                          , matchInterface = iface
+                          , matchMember = memberName
+                          }
+
+instance FromData MethodCall where
+    fromData = do
+        callPath <- fromData
+        iface <- fromData
+        member <- fromData
+        callBody <- liftM (map variantFromString) $ looks "body[]"
+        dest <- fromData
+        let setBodyDest mcall = mcall { methodCallBody = callBody
+                                      , methodCallDestination = dest
+                                      }
+        return $ setBodyDest $ methodCall callPath iface member
+
+instance FromData ObjectPath where
+    fromData = liftM (fromJust . parseObjectPath) $ look "path"
+
+instance FromData InterfaceName where
+    fromData = liftM (fromJust . parseInterfaceName) $ look "iface"
+
+instance FromData MemberName where
+    fromData = liftM (fromJust . parseMemberName) $ look "member"
+
+instance FromData BusName where
+    fromData = liftM (fromJust . parseBusName) $ look "destination"
 
 variantFromString :: String -> Variant
 variantFromString param = case splitOn ":" param of
     ["string", str] -> toVariant str
     _ -> error "Invalid variant string"
-
-methodCallUri :: URIParams -> Maybe MethodCall
-methodCallUri params = liftM setBodyDest $ methodCall <$> callPath <*> iface <*> member
-    where callPath = lookupQueryParam "path" params >>= parseObjectPath
-          iface = lookupQueryParam "iface" params >>= parseInterfaceName
-          member = lookupQueryParam "member" params >>= parseMemberName
-          setBodyDest mcall = mcall { methodCallBody = body
-                                    , methodCallDestination = dest
-                                    }
-          body = map variantFromString $ getQueryParams "body[]" params
-          dest = lookupQueryParam "destination" params >>= parseBusName

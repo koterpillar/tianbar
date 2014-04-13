@@ -25,7 +25,7 @@ define(['jquery', './tianbar'], function ($, tianbar) {
           index: evt.index
         };
         copyProperties(['path', 'iface', 'member'], match, data);
-        $.ajax('dbus:' + busName + '/listen', {
+        $.ajax('tianbar:///dbus/' + busName + '/listen', {
           data: data
         });
 
@@ -46,7 +46,7 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         data.random = new Date().getTime();
         var deferred = $.Deferred();
 
-        $.ajax('dbus:' + busName + '/call', {
+        $.ajax('tianbar:///dbus/' + busName + '/call', {
           data: data
         }).done(function (result) {
           result = JSON.parse(result);
