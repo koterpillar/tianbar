@@ -17,7 +17,7 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         path: path,
         random: new Date().getTime()
       }
-    }).done(function () {
+    }).then(function () {
       return {
         /**
          * Send data to a socket.
