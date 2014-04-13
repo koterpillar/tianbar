@@ -25,7 +25,7 @@ executable tianbar
                      , dbus ==0.10.*
                      , gtk ==0.12.*
                      , gtk-traymanager ==0.1.*
-                     , webkit ==0.12.*
+                     , webkit >=0.12.6.1 && <0.13
                      , xdg-basedir ==0.2.*
                      , process ==1.1.*
   pkgconfig-depends:   gtk+-2.0
