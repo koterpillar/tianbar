@@ -54,6 +54,7 @@ executable tianbar
                      , System.Tianbar.Plugin.Basic
                      , System.Tianbar.Plugin.Combined
                      , System.Tianbar.Plugin.DBus
+                     , System.Tianbar.Plugin.DBus.FromData
                      , System.Tianbar.Plugin.DBus.JSON
                      , System.Tianbar.Plugin.Socket
                      , System.Tianbar.Utils
