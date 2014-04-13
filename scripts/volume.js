@@ -24,7 +24,7 @@ define(['jquery', './socket'], function ($, socket) {
     return socket('/var/run/user/' + uid + '/pulse/cli');
   }).done(function (pulseSocket) {
     pulseSocket.recv.add(function (dump) {
-      var mute = MUTE_RE.exec(dump)[1] === "on";
+      var mute = MUTE_RE.exec(dump)[1] === "yes";
       var volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
 
       var widget = $('.widget-volume');
