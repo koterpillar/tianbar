@@ -1,12 +1,10 @@
 {-# Language OverloadedStrings #-}
 module System.Tianbar.WebKit where
 
-import Control.Concurrent.MVar (modifyMVar_, newMVar, withMVar)
+import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
-
-import Data.List.Split
 
 import Graphics.UI.Gtk hiding (disconnect, Signal, Variant)
 import Graphics.UI.Gtk.WebKit.NetworkRequest
@@ -18,47 +16,10 @@ import Network.URI
 
 import System.Environment.XDG.BaseDir
 
-import System.Process
-
+import System.Tianbar.Callbacks
 import System.Tianbar.Configuration
-import System.Tianbar.DBus
-import System.Tianbar.Socket
-import System.Tianbar.Plugin
-import System.Tianbar.Plugin.Combined
-
-import Paths_tianbar
-
--- GSettings plugin
-data GSettings = GSettings
-
-instance Plugin GSettings where
-    initialize _ = return GSettings
-    handleRequest _ = withScheme "gsettings:" $ \uri -> do
-        let [schema, key] = splitOn "/" $ uriPath uri
-        setting <- gsettingsGet schema key
-        return $ Just $ plainContent setting
-
-gsettingsGet :: String -> String -> IO String
-gsettingsGet schema key = do
-    output <- readProcess "gsettings" ["get", schema, key] []
-    let len = length output
-    return $ drop 1 $ take (len - 2) output
-
--- Data directory override
-data DataDirectory = DataDirectory
-
-instance Plugin DataDirectory where
-    initialize _ = return DataDirectory
-    handleRequest _ = withScheme "tianbar:" $ \uri -> do
-        let filePath = uriPath uri
-        dataFile <- getDataFileName filePath
-        return $ Just $ "file://" ++ dataFile
-
-type AllPlugins = Combined GSettings (
-                  Combined DataDirectory (
-                  Combined SocketPlugin (
-                  Combined DBusPlugin
-                  Empty)))
+import System.Tianbar.Server
+import System.Tianbar.Utils
 
 tianbarWebView :: IO WebView
 tianbarWebView = do
@@ -70,17 +31,19 @@ tianbarWebView = do
     webViewSetWebSettings wk wsettings
 
     -- Initialize plugins, and re-initialize on reloads
-    plugins <- (initialize wk :: IO AllPlugins) >>= newMVar
-    _ <- on wk loadStarted $ \_ -> modifyMVar_ plugins $ \oldPlugins -> do
-        destroy oldPlugins
-        initialize wk
+    server <- startServer (callbacks wk) >>= newMVar
+    _ <- on wk loadStarted $ \_ -> modifyMVar_ server $ \oldServer -> do
+        stopServer oldServer
+        startServer (callbacks wk)
 
     -- Process the special overrides
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> void $ runMaybeT $ do
         req <- liftMT nreq
-        uri <- MaybeT $ networkRequestGetUri req
-        override <- MaybeT $ withMVar plugins $ flip handleRequest uri
-        liftIO $ networkRequestSetUri req override
+        uriStr <- MaybeT $ networkRequestGetUri req
+        uri <- liftMT $ parseURI uriStr
+        override <- liftIO $ withMVar server $ return . serverOverrideURI
+        let uri' = override uri
+        liftIO $ networkRequestSetUri req $ show uri'
 
     -- Handle new window creation
     _ <- on wk createWebView $ \_ -> do

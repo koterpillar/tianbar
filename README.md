@@ -18,15 +18,33 @@ Widgets
 -------
 
 A small collection of widgets written in JavaScript is bundled with Tianbar,
-see `scripts` directory. To include them on your page, use `tianbar:` URL
-scheme, e.g. `tianbar:scripts/time.js`.
+see `scripts` directory. To include them on your page, use
+`tianbar:///data/` prefix, e.g. `tianbar:///data/scripts/time.js`.
 
-Currently widgets require [jQuery][jquery] and [RequireJS][requirejs], and
-neither of those is distributed with Tianbar -- you will have to obtain them
-manually.
+Most widgets require third-party libraries such as [jQuery][jquery] and
+[RequireJS][requirejs], and neither of those is distributed with Tianbar --
+see individual widget documentation and obtain the libraries manually.
 
-XMonad integration
-------------------
+### Power
+
+Displays the battery status for all the batteries reporting through UPower.
+
+### Time
+
+Displays the time and date.
+
+### Volume
+
+Displays the current PulseAudio volume. Note that `module-cli-protocol-unix`
+is required to be loaded.
+
+### Weather
+
+Displays the weather at current location through
+[OpenWeatherMap][openweathermap]. HTML geolocation API is required to determine
+the current location, see [Quirks](#quirks) below.
+
+### XMonad
 
 XMonad status widget works by listening on DBus for messages sent by the
 provided `logHook`, see `System.Tianbar.XMonadLog` documentation for details.
@@ -52,6 +70,7 @@ with it.
 
 [freegeoip]: http://freegeoip.net/
 [jquery]: http://jquery.com/
+[openweathermap]: http://openweathermap.org/
 [requirejs]: http://requirejs.org/
 [taffybar]: https://github.com/travitch/taffybar
 [xdg]: http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html

@@ -1,5 +1,5 @@
 name:                tianbar
-version:             0.3.6.0
+version:             0.4.0.0
 synopsis:            A desktop bar based on WebKit
 description:
   A desktop bar using WebKit for rendering as much as possible.
@@ -31,9 +31,11 @@ executable tianbar
                      , dbus >=0.10.7 && <0.11
                      , gtk ==0.12.*
                      , gtk-traymanager ==0.1.*
+                     , happstack-server == 7.3.*
                      , MissingH ==1.2.*
                      , network ==2.4.*
                      , process ==1.1.*
+                     , random ==1.0.*
                      , split ==0.2.*
                      , text ==0.11.*
                      , transformers ==0.3.*
@@ -43,13 +45,18 @@ executable tianbar
   hs-source-dirs:      src
   main-is:             Main.hs
   other-modules:       System.Tianbar
+                     , System.Tianbar.Callbacks
                      , System.Tianbar.Configuration
-                     , System.Tianbar.DBus
-                     , System.Tianbar.DBus.JSON
-                     , System.Tianbar.Socket
+                     , System.Tianbar.Server
                      , System.Tianbar.StrutProperties
                      , System.Tianbar.Systray
                      , System.Tianbar.Plugin
+                     , System.Tianbar.Plugin.Basic
+                     , System.Tianbar.Plugin.Combined
+                     , System.Tianbar.Plugin.DBus
+                     , System.Tianbar.Plugin.DBus.JSON
+                     , System.Tianbar.Plugin.Socket
+                     , System.Tianbar.Utils
                      , System.Tianbar.WebKit
   c-sources:           src/gdk_property_change_wrapper.c
   ghc-options:         -Wall -rtsopts -threaded

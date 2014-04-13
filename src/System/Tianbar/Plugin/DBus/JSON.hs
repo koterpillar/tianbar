@@ -1,6 +1,6 @@
 {-# Language OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module System.Tianbar.DBus.JSON () where
+module System.Tianbar.Plugin.DBus.JSON () where
 
 import Data.Aeson hiding (Array)
 import Data.Int
