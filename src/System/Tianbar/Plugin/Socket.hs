@@ -1,4 +1,4 @@
-module System.Tianbar.Socket where
+module System.Tianbar.Plugin.Socket where
 
 -- Socket connectivity
 

@@ -13,11 +13,11 @@ import Network.Socket
 import Network.URI
 
 import System.Tianbar.Callbacks
-import System.Tianbar.DBus
-import System.Tianbar.Socket
 import System.Tianbar.Plugin
 import System.Tianbar.Plugin.Basic
 import System.Tianbar.Plugin.Combined
+import System.Tianbar.Plugin.DBus
+import System.Tianbar.Plugin.Socket
 
 data Server = Server { serverOverrideURI :: URI -> URI
                      , stopServer :: IO ()
