@@ -2,84 +2,71 @@ module System.Tianbar.Socket where
 
 -- Socket connectivity
 
-import Control.Exception
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Maybe
 
 import qualified Data.Map as M
 
-import Graphics.UI.Gtk.WebKit.WebView
+import Happstack.Server
 
 import Network.Socket
-import Network.URI
 
-import System.Tianbar.Plugin
-import System.Tianbar.Utils
+import System.Tianbar.Callbacks
 
-data SocketPlugin = SocketPlugin { spHost :: WebView
-                                 , spSock :: MVar (M.Map String Socket)
-                                 }
+data SocketPlugin c = SocketPlugin { spHost :: c
+                                   , spSock :: MVar (M.Map String Socket)
+                                   }
 
-instance Plugin SocketPlugin where
-    initialize wk = do
-        socks <- newMVar M.empty
-        return $ SocketPlugin wk socks
+socketPlugin :: Callbacks c => c -> IO (ServerPartT IO Response)
+socketPlugin c = do
+    socks <- newMVar M.empty
+    return $ socketHandler $ SocketPlugin c socks
 
-    destroy sp = withMVar (spSock sp) $ mapM_ close . M.elems
+destroy :: SocketPlugin c -> IO ()
+destroy sp = withMVar (spSock sp) $ mapM_ close . M.elems
 
-    handleRequest sp = withScheme "socket:" $ \uri -> runMaybeT $ do
-        let params = parseQuery uri
-        case uriPath uri of
-            "connect" -> socketConnect sp params
-            "send" -> socketSend sp params
-            "close" -> socketClose sp params
-            _ -> error "Bad URI"
+socketHandler :: Callbacks c => SocketPlugin c -> ServerPartT IO Response
+socketHandler plugin = dir "socket" $ msum $ map (\act -> act plugin) acts
+    where acts = [connectHandler, sendHandler, closeHandler]
 
-socketConnect :: SocketPlugin -> URIParams -> MaybeT IO String
-socketConnect sp params = do
-    callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
-    socketPath <- liftMT $ lookupQueryParam "path" params
-    liftIO $ handle showExc $ do
-        sock <- socket AF_UNIX Stream defaultProtocol
-        connect sock $ SockAddrUnix socketPath
-        let closeSocket = cleanup sp sock callbackIndex
-        _ <- forkIO $ void $ handle closeSocket $ forever $ do
-            response <- recv sock 4096
-            callback (spHost sp) callbackIndex [response]
-        modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
-        returnContent "ok"
+connectHandler :: Callbacks c => SocketPlugin c -> ServerPartT IO Response
+connectHandler sp = dir "connect" $ do
+    nullDir
+    callbackIndex <- look "callbackIndex"
+    socketPath <- look "path"
+    sock <- liftIO $ do
+        s <- socket AF_UNIX Stream defaultProtocol
+        connect s $ SockAddrUnix socketPath
+        return s
+    _ <- liftIO $ forkIO $ void $ forever $ do
+        response <- recv sock 4096
+        callback (spHost sp) callbackIndex [response]
+    liftIO $ modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
+    return $ toResponse "ok"
 
-socketSend :: SocketPlugin -> URIParams -> MaybeT IO String
-socketSend sp params = do
-    callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
-    sock <- MaybeT $ withSocket sp callbackIndex
-    dataToSend <- liftMT $ lookupQueryParam "data" params
-    liftIO $ handle (cleanup sp sock callbackIndex) $ do
-        -- TODO: resend until done
-        _ <- send sock dataToSend
-        returnContent "ok"
+sendHandler :: Callbacks c => SocketPlugin c -> ServerPartT IO Response
+sendHandler sp = dir "send" $ do
+    nullDir
+    callbackIndex <- look "callbackIndex"
+    -- TODO: Maybe
+    Just sock <- withSocket sp callbackIndex
+    dataToSend <- look "data"
+    -- TODO: resend until done
+    _ <- liftIO $ send sock dataToSend
+    return $ toResponse "ok"
 
-socketClose :: SocketPlugin -> URIParams -> MaybeT IO String
-socketClose sp params = do
-    callbackIndex <- liftMT $ lookupQueryParam "callbackIndex" params
-    sock <- MaybeT $ withSocket sp callbackIndex
+closeHandler :: Callbacks c => SocketPlugin c -> ServerPartT IO Response
+closeHandler sp = dir "close" $ do
+    nullDir
+    callbackIndex <- look "callbackIndex"
+    sock <- withSocket sp callbackIndex
+    case sock of
+        Nothing -> return ()
+        Just sock' -> liftIO $ do
+            close sock'
+            modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
+    return $ toResponse "ok"
 
-    liftIO $ do
-        close sock
-        modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
-    returnContent "ok"
-
-showExc :: IOException -> IO String
-showExc = return . show
-
-cleanup :: SocketPlugin -> Socket -> String -> IOException -> IO String
-cleanup sp sock callbackIndex exc = do
-    let ignore = const (return ()) :: IOException -> IO ()
-    handle ignore $ close sock
-    modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
-    showExc exc
-
-withSocket :: SocketPlugin -> String -> IO (Maybe Socket)
-withSocket sp callbackIndex = withMVar (spSock sp) $ return . M.lookup callbackIndex
+withSocket :: MonadIO m => SocketPlugin c -> String -> m (Maybe Socket)
+withSocket sp callbackIndex = liftIO $ withMVar (spSock sp) $ return . M.lookup callbackIndex

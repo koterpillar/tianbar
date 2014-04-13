@@ -15,7 +15,7 @@ import Network.URI
 
 import System.Tianbar.Callbacks
 import System.Tianbar.DBus
--- import System.Tianbar.Socket
+import System.Tianbar.Socket
 import System.Tianbar.Plugin.Basic
 
 data Server = Server { serverOverrideURI :: URI -> URI
@@ -34,9 +34,11 @@ runServer c sock = do
     portNum <- socketPort sock
     let conf = nullConf { port = fromIntegral portNum, logAccess = Just spy }
     dbusPlugin <- dbus c
+    socketPlugin' <- socketPlugin c
     simpleHTTPWithSocket sock conf $ msum [ mzero
                                           , dataDirectory
                                           , dbusPlugin
+                                          , socketPlugin'
                                           ]
 
 handleURI :: PortNumber -> URI -> URI

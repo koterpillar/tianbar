@@ -20,8 +20,9 @@ define(['jquery', './socket'], function ($, socket) {
     });
   }
 
-  uid().done(function (uid) {
-    var pulseSocket = socket('/var/run/user/' + uid + '/pulse/cli');
+  uid().then(function (uid) {
+    return socket('/var/run/user/' + uid + '/pulse/cli');
+  }).done(function (pulseSocket) {
     pulseSocket.recv.add(function (dump) {
       var mute = MUTE_RE.exec(dump)[1] === "on";
       var volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
@@ -72,6 +73,8 @@ define(['jquery', './socket'], function ($, socket) {
 
       var percentage = volume.toFixed(2) * 100;
       widget.attr('title', percentage + '%');
+
+      window.setTimeout(requestDump, 1000);
     });
 
     function requestDump () {
@@ -79,6 +82,5 @@ define(['jquery', './socket'], function ($, socket) {
     }
 
     requestDump();
-    window.setInterval(requestDump, 1000);
   });
 });
