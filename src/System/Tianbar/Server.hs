@@ -6,7 +6,6 @@ module System.Tianbar.Server (
 -- Server to handle JS callbacks
 
 import Control.Concurrent
-import Control.Monad
 
 import Happstack.Server
 
@@ -16,30 +15,37 @@ import Network.URI
 import System.Tianbar.Callbacks
 import System.Tianbar.DBus
 import System.Tianbar.Socket
+import System.Tianbar.Plugin
 import System.Tianbar.Plugin.Basic
+import System.Tianbar.Plugin.Combined
 
 data Server = Server { serverOverrideURI :: URI -> URI
-                     , serverThread :: ThreadId
+                     , stopServer :: IO ()
                      }
 
-startServer :: Callbacks c => c -> IO Server
+startServer :: Callbacks -> IO Server
 startServer c = do
     sock <- bindIPv4 "127.0.0.1" $ fromIntegral aNY_PORT
-    thread <- forkIO $ runServer c sock
+    plugins <- initialize c :: IO AllPlugins
+    thread <- forkIO $ runServer sock plugins
     portNum <- socketPort sock
-    return $ Server (handleURI portNum) thread
+    return $ Server (handleURI portNum) (killServer thread plugins)
 
-runServer :: Callbacks c => c -> Socket -> IO ()
-runServer c sock = do
+type AllPlugins = Combined DBusPlugin (
+                  Combined SocketPlugin (
+                  Combined DataDirectory (
+                  Combined Empty Empty)))
+
+runServer :: Plugin p => Socket -> p -> IO ()
+runServer sock p = do
     portNum <- socketPort sock
-    let conf = nullConf { port = fromIntegral portNum, logAccess = Just spy }
-    dbusPlugin <- dbus c
-    socketPlugin' <- socketPlugin c
-    simpleHTTPWithSocket sock conf $ msum [ mzero
-                                          , dataDirectory
-                                          , dbusPlugin
-                                          , socketPlugin'
-                                          ]
+    let conf = nullConf { port = fromIntegral portNum }
+    simpleHTTPWithSocket sock conf $ handler p
+
+killServer :: Plugin p => ThreadId -> p -> IO ()
+killServer thread p = do
+    destroy p
+    killThread thread
 
 handleURI :: PortNumber -> URI -> URI
 handleURI portNum uri | uriScheme uri == "tianbar:" = uri'
@@ -50,6 +56,3 @@ handleURI portNum uri | uriScheme uri == "tianbar:" = uri'
                                                    , uriPort = ':' : show portNum
                                                    }
                      }
-
-spy :: String -> String -> t -> String -> Int -> Integer -> String -> String -> IO ()
-spy _ _ _ rl _ _ _ _ = putStrLn rl

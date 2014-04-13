@@ -1,4 +1,8 @@
-module System.Tianbar.Callbacks where
+module System.Tianbar.Callbacks (
+    callback,
+    callbacks,
+    Callbacks,
+) where
 
 import Data.Aeson
 
@@ -8,12 +12,14 @@ import Graphics.UI.Gtk.WebKit.WebView
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as E
 
-class Callbacks c where
-    callback :: (ToJSON i, ToJSON p) => c -> i -> p -> IO ()
+newtype Callbacks = Callbacks WebView
 
-instance Callbacks WebView where
-    callback wk index param =
-        postGUIAsync $ webViewExecuteScript wk $ callbackScript index param
+callbacks :: WebView -> Callbacks
+callbacks = Callbacks
+
+callback :: (ToJSON i, ToJSON p) => Callbacks -> i -> p -> IO ()
+callback (Callbacks wk) index param =
+    postGUIAsync $ webViewExecuteScript wk $ callbackScript index param
 
 callbackScript :: (ToJSON i, ToJSON p) => i -> p -> String
 callbackScript index param =

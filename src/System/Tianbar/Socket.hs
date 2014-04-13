@@ -13,24 +13,23 @@ import Happstack.Server
 import Network.Socket
 
 import System.Tianbar.Callbacks
+import System.Tianbar.Plugin
 
-data SocketPlugin c = SocketPlugin { spHost :: c
-                                   , spSock :: MVar (M.Map String Socket)
-                                   }
+data SocketPlugin = SocketPlugin { spHost :: Callbacks
+                                 , spSock :: MVar (M.Map String Socket)
+                                 }
 
-socketPlugin :: Callbacks c => c -> IO (ServerPartT IO Response)
-socketPlugin c = do
-    socks <- newMVar M.empty
-    return $ socketHandler $ SocketPlugin c socks
+instance Plugin SocketPlugin where
+    initialize c = do
+        socks <- newMVar M.empty
+        return $ SocketPlugin c socks
 
-destroy :: SocketPlugin c -> IO ()
-destroy sp = withMVar (spSock sp) $ mapM_ close . M.elems
+    destroy sp = withMVar (spSock sp) $ mapM_ close . M.elems
 
-socketHandler :: Callbacks c => SocketPlugin c -> ServerPartT IO Response
-socketHandler plugin = dir "socket" $ msum $ map (\act -> act plugin) acts
-    where acts = [connectHandler, sendHandler, closeHandler]
+    handler plugin = dir "socket" $ msum $ map (\act -> act plugin) acts
+        where acts = [connectHandler, sendHandler, closeHandler]
 
-connectHandler :: Callbacks c => SocketPlugin c -> ServerPartT IO Response
+connectHandler :: SocketPlugin -> ServerPartT IO Response
 connectHandler sp = dir "connect" $ do
     nullDir
     callbackIndex <- look "callbackIndex"
@@ -45,7 +44,7 @@ connectHandler sp = dir "connect" $ do
     liftIO $ modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
     return $ toResponse "ok"
 
-sendHandler :: Callbacks c => SocketPlugin c -> ServerPartT IO Response
+sendHandler :: SocketPlugin -> ServerPartT IO Response
 sendHandler sp = dir "send" $ do
     nullDir
     callbackIndex <- look "callbackIndex"
@@ -56,7 +55,7 @@ sendHandler sp = dir "send" $ do
     _ <- liftIO $ send sock dataToSend
     return $ toResponse "ok"
 
-closeHandler :: Callbacks c => SocketPlugin c -> ServerPartT IO Response
+closeHandler :: SocketPlugin -> ServerPartT IO Response
 closeHandler sp = dir "close" $ do
     nullDir
     callbackIndex <- look "callbackIndex"
@@ -68,5 +67,5 @@ closeHandler sp = dir "close" $ do
             modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
     return $ toResponse "ok"
 
-withSocket :: MonadIO m => SocketPlugin c -> String -> m (Maybe Socket)
+withSocket :: MonadIO m => SocketPlugin -> String -> m (Maybe Socket)
 withSocket sp callbackIndex = liftIO $ withMVar (spSock sp) $ return . M.lookup callbackIndex

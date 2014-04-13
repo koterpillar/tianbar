@@ -16,6 +16,7 @@ import Network.URI
 
 import System.Environment.XDG.BaseDir
 
+import System.Tianbar.Callbacks
 import System.Tianbar.Configuration
 import System.Tianbar.Server
 import System.Tianbar.Utils
@@ -30,10 +31,10 @@ tianbarWebView = do
     webViewSetWebSettings wk wsettings
 
     -- Initialize plugins, and re-initialize on reloads
-    server <- startServer wk >>= newMVar
+    server <- startServer (callbacks wk) >>= newMVar
     _ <- on wk loadStarted $ \_ -> modifyMVar_ server $ \oldServer -> do
-        killThread $ serverThread oldServer
-        startServer wk
+        stopServer oldServer
+        startServer (callbacks wk)
 
     -- Process the special overrides
     _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> void $ runMaybeT $ do

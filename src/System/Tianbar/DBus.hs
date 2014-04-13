@@ -1,7 +1,5 @@
 {-# Language OverloadedStrings #-}
-{-# Language FlexibleInstances #-}
-{-# Language RankNTypes #-}
-module System.Tianbar.DBus (dbus) where
+module System.Tianbar.DBus where
 
 -- DBus connectivity
 
@@ -19,47 +17,44 @@ import DBus.Client
 
 import System.Tianbar.DBus.JSON ()
 import System.Tianbar.Callbacks
+import System.Tianbar.Plugin
 
-data DBusPlugin c = DBusPlugin { dbusHost :: c
-                               , dbusSession :: Client
-                               , dbusSystem :: Client
-                               }
+data DBusPlugin = DBusPlugin { dbusHost :: Callbacks
+                             , dbusSession :: Client
+                             , dbusSystem :: Client
+                             }
 
-busNameMap :: forall c. [(String, DBusPlugin c -> Client)]
+busNameMap :: [(String, DBusPlugin -> Client)]
 busNameMap = [ ("session", dbusSession)
              , ("system", dbusSystem)
              ]
 
--- TODO: Is IO needed twice?
-dbus :: Callbacks c => c -> IO (ServerPartT IO Response)
-dbus c = do
-    session <- connectSession
-    system <- connectSystem
-    return $ dbusHandler $ DBusPlugin c session system
+instance Plugin DBusPlugin where
+    initialize c = do
+        session <- connectSession
+        system <- connectSystem
+        return $ DBusPlugin c session system
 
--- TODO: stopping?
-destroy :: DBusPlugin c -> IO ()
-destroy plugin = mapM_ disconnect [dbusSession plugin, dbusSystem plugin]
+    destroy plugin = mapM_ disconnect [dbusSession plugin, dbusSystem plugin]
 
-dbusHandler :: Callbacks c => DBusPlugin c -> ServerPartT IO Response
-dbusHandler plugin = dir "dbus" $ msum [ busHandler plugin busName (bus plugin)
+    handler plugin = dir "dbus" $ msum [ busHandler plugin busName (bus plugin)
                                        | (busName, bus) <- busNameMap
                                        ]
 
-busHandler :: Callbacks c => DBusPlugin c -> String -> Client -> ServerPartT IO Response
+busHandler :: DBusPlugin -> String -> Client -> ServerPartT IO Response
 busHandler plugin busName bus = dir busName $ msum [ mzero
                                                    , listenHandler plugin bus
                                                    , callHandler plugin bus
                                                    ]
 
-listenHandler :: Callbacks c => DBusPlugin c -> Client -> ServerPartT IO Response
+listenHandler :: DBusPlugin -> Client -> ServerPartT IO Response
 listenHandler plugin client = dir "listen" $ withData $ \matcher -> do
     nullDir
     index <- look "index"
     _ <- liftIO $ addMatch client matcher $ \sig -> callback (dbusHost plugin) index [sig]
     return $ toResponse ("ok" :: String)
 
-callHandler :: DBusPlugin c -> Client -> ServerPartT IO Response
+callHandler :: DBusPlugin -> Client -> ServerPartT IO Response
 callHandler _ client = dir "call" $ withData $ \mcall -> do
     nullDir
     res <- liftIO $ call client mcall
