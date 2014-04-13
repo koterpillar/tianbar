@@ -1,0 +1,8 @@
+{
+  "browser": true,
+  "globals": {
+    "define": false
+  },
+  "strict": true,
+  "unused": true
+}

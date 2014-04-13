@@ -10,6 +10,7 @@
  * (this can be done by providing 'moment-with-langs.js' as 'moment').
  */
 define(['jquery', 'moment'], function ($, moment) {
+  "use strict";
   var config = {
     format: 'llll'
   };

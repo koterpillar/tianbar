@@ -35,7 +35,7 @@ main = do
     box <- hBoxNew False widgetSpacing
     containerAdd window box
 
-    wk <- xmonadWebkitLogNew
+    wk <- tianbarWebkitNew
     boxPackStart box wk PackGrow 0
 
     tray <- systrayNew

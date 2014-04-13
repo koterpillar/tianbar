@@ -5,27 +5,26 @@
  *
  * The status appears in elements matching class 'widget-xmonad'.
  *
+ * The 'change' callback ($.Callbacks) object is fired whenever the
+ * status changes.
+ *
  * The plugin requires 'jquery' to be available through RequireJS.
  */
-define(['jquery'], function ($) {
-  function setStatus(st) {
+define(['jquery', './dbus'], function ($, dbus) {
+  "use strict";
+  var change = $.Callbacks();
+
+  dbus.session.listen({
+    path: '/org/xmonad/Log',
+    iface: 'org.xmonad.Log',
+    member: 'Update'
+  }).add(function (ev) {
+    var st = ev.body[0];
     $('.widget-xmonad').html(st);
-  }
-
-  // Currently, a check for this function (and if it doesn't exist,
-  // window.XMonadStatus) is hardcoded in Tianbar. A better solution
-  // would be to expose an interface for subscribing to DBus connections
-  // from JavaScript.
-  window.setXMonadStatus = function (st) {
-    window.XMonadStatus = undefined;
-    setStatus(st);
-  };
-
-  $(document).ready(function () {
-    window.setTimeout(function () {
-      if (window.XMonadStatus) {
-        window.setXMonadStatus(window.XMonadStatus);
-      }
-    }, 1000);
+    change.fire(st);
   });
+
+  return {
+    change: change
+  };
 });

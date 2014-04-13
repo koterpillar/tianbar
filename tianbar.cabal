@@ -1,5 +1,5 @@
 name:                tianbar
-version:             0.2.2.0
+version:             0.4.0.1
 synopsis:            A desktop bar based on WebKit
 description:
   A desktop bar using WebKit for rendering as much as possible.
@@ -13,28 +13,50 @@ category:            System
 build-type:          Simple
 cabal-version:       >=1.10
 data-files:          README.md
+                   , scripts/dbus.js
+                   , scripts/power.js
+                   , scripts/socket.js
+                   , scripts/tianbar.js
                    , scripts/time.js
+                   , scripts/volume.js
                    , scripts/weather.js
                    , scripts/xmonad.js
 
 executable tianbar
   default-language:    Haskell2010
   build-depends:       base >3 && <5
-                     , split ==0.2.*
-                     , MissingH ==1.2.*
-                     , dbus ==0.10.*
+                     , aeson ==0.6.*
+                     , containers ==0.5.*
+                     , dbus >=0.10.7 && <0.11
                      , gtk ==0.12.*
                      , gtk-traymanager ==0.1.*
+                     , happstack-server == 7.3.*
+                     , MissingH ==1.2.*
+                     , network ==2.4.*
+                     , process ==1.1.*
+                     , random ==1.0.*
+                     , split ==0.2.*
+                     , text ==0.11.*
+                     , transformers ==0.3.*
                      , webkit >=0.12.6.1 && <0.13
                      , xdg-basedir ==0.2.*
-                     , process ==1.1.*
   pkgconfig-depends:   gtk+-2.0
   hs-source-dirs:      src
   main-is:             Main.hs
   other-modules:       System.Tianbar
+                     , System.Tianbar.Callbacks
                      , System.Tianbar.Configuration
+                     , System.Tianbar.Server
                      , System.Tianbar.StrutProperties
                      , System.Tianbar.Systray
+                     , System.Tianbar.Plugin
+                     , System.Tianbar.Plugin.Basic
+                     , System.Tianbar.Plugin.Combined
+                     , System.Tianbar.Plugin.DBus
+                     , System.Tianbar.Plugin.DBus.FromData
+                     , System.Tianbar.Plugin.DBus.JSON
+                     , System.Tianbar.Plugin.Socket
+                     , System.Tianbar.Utils
                      , System.Tianbar.WebKit
   c-sources:           src/gdk_property_change_wrapper.c
   ghc-options:         -Wall -rtsopts -threaded
@@ -47,12 +69,12 @@ library
                      , xmonad
                      , xmonad-contrib
                      , utf8-string ==0.3.*
-                     , blaze-html ==0.5.*
-                     , blaze-markup ==0.5.*
+                     , blaze-html >=0.5 && <0.8
+                     , blaze-markup >=0.5 && <0.7
   hs-source-dirs:      src
   exposed-modules:     System.Tianbar.XMonadLog
-  ghc-options: -Wall -rtsopts
-  ghc-prof-options: -auto-all
+  ghc-options:         -Wall -rtsopts
+  ghc-prof-options:    -auto-all
 
 source-repository head
   type:                git

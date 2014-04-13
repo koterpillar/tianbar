@@ -1,57 +1,26 @@
+{-# Language OverloadedStrings #-}
 module System.Tianbar.WebKit where
 
+import Control.Concurrent
 import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Maybe
 
-import Data.List
-import Data.List.Split
-import Data.List.Utils
-
-import DBus (fromVariant, Signal(..), parseObjectPath, parseInterfaceName, parseMemberName)
-import DBus.Client (listen, matchAny, MatchRule(..), connectSession)
-
-import Graphics.UI.Gtk hiding (Signal)
+import Graphics.UI.Gtk hiding (disconnect, Signal, Variant)
 import Graphics.UI.Gtk.WebKit.GeolocationPolicyDecision
 import Graphics.UI.Gtk.WebKit.NetworkRequest
 import Graphics.UI.Gtk.WebKit.WebSettings
 import Graphics.UI.Gtk.WebKit.WebView
 import Graphics.UI.Gtk.WebKit.WebWindowFeatures
 
+import Network.URI
+
 import System.Environment.XDG.BaseDir
 
-import System.Process
-
+import System.Tianbar.Callbacks
 import System.Tianbar.Configuration
-
-import Paths_tianbar
-
-gsettingsGet :: String -> String -> IO String
-gsettingsGet schema key = do
-    output <- readProcess "gsettings" ["get", schema, key] []
-    let len = length output
-    return $ drop 1 $ take (len - 2) output
-
-type UriOverride = String -> Maybe (IO String)
-
-withPrefix :: String -> (String -> IO String) -> UriOverride
-withPrefix prefix func uri
-    | prefix `isPrefixOf` uri = Just $ func $ drop (length prefix) uri
-    | otherwise = Nothing
-
-gsettingsUriOverride :: UriOverride
-gsettingsUriOverride = withPrefix "gsettings:" $ \path -> do
-    let [schema, key] = splitOn "/" path
-    setting <- gsettingsGet schema key
-    return $ "data:text/plain," ++ setting
-
-dataFileOverride :: UriOverride
-dataFileOverride = withPrefix "tianbar:" $ \path -> do
-    liftM ("file://" ++) $ getDataFileName path
-
-uriOverrides :: [UriOverride]
-uriOverrides = [gsettingsUriOverride, dataFileOverride]
-
-allOverrides :: UriOverride
-allOverrides = foldr mplus Nothing . flip map uriOverrides . flip ($)
+import System.Tianbar.Server
+import System.Tianbar.Utils
 
 tianbarWebView :: IO WebView
 tianbarWebView = do
@@ -67,15 +36,20 @@ tianbarWebView = do
         geolocationPolicyAllow decision
         return True
 
+    -- Initialize plugins, and re-initialize on reloads
+    server <- startServer (callbacks wk) >>= newMVar
+    _ <- on wk loadStarted $ \_ -> modifyMVar_ server $ \oldServer -> do
+        stopServer oldServer
+        startServer (callbacks wk)
+
     -- Process the special overrides
-    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> case nreq of
-        Nothing -> return ()
-        (Just req) -> do
-            uri <- networkRequestGetUri req
-            let override_ = uri >>= allOverrides
-            case override_ of
-                Nothing -> return ()
-                (Just override) -> override >>= networkRequestSetUri req
+    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> void $ runMaybeT $ do
+        req <- liftMT nreq
+        uriStr <- MaybeT $ networkRequestGetUri req
+        uri <- liftMT $ parseURI uriStr
+        override <- liftIO $ withMVar server $ return . serverOverrideURI
+        let uri' = override uri
+        liftIO $ networkRequestSetUri req $ show uri'
 
     -- Handle new window creation
     _ <- on wk createWebView $ \_ -> do
@@ -115,42 +89,17 @@ tianbarWebView = do
     return wk
 
 
-setupWebkitLog :: WebView -> IO ()
-setupWebkitLog wk = do
-    let matcher = matchAny { matchSender = Nothing
-                           , matchDestination = Nothing
-                           , matchPath = parseObjectPath "/org/xmonad/Log"
-                           , matchInterface = parseInterfaceName "org.xmonad.Log"
-                           , matchMember = parseMemberName "Update"
-                           }
-
+loadIndexPage :: WebView -> IO ()
+loadIndexPage wk = do
     htmlFile <- getUserConfigFile appName "index.html"
     html <- readFile htmlFile
     webViewLoadHtmlString wk html $ "file://" ++ htmlFile
 
-    client <- connectSession
-
-    listen client matcher $ callback wk
-
-escapeQuotes :: String -> String
-escapeQuotes = replace "'" "\\'" . replace "\\" "\\\\"
-
-callback :: WebView -> Signal -> IO ()
-callback wk sig = do
-    let [bdy] = signalBody sig
-        Just status = fromVariant bdy
-    postGUIAsync $ webViewExecuteScript wk $ setStatus status
-
-setStatus :: String -> String
-setStatus status = let statusStr = escapeQuotes status in
-    "window.setXMonadStatus ? window.setXMonadStatus('" ++ statusStr ++ "')" ++
-        " : window.XMonadStatus = '" ++ statusStr ++ "'"
-
-xmonadWebkitLogNew :: IO Widget
-xmonadWebkitLogNew = do
+tianbarWebkitNew :: IO Widget
+tianbarWebkitNew = do
     l <- tianbarWebView
 
-    _ <- on l realize $ setupWebkitLog l
+    _ <- on l realize $ loadIndexPage l
 
     Just disp <- displayGetDefault
     screen <- displayGetScreen disp myScreen
