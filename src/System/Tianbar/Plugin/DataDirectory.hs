@@ -1,6 +1,6 @@
-module System.Tianbar.Plugin.Basic where
+module System.Tianbar.Plugin.DataDirectory where
 
--- Simple plugins
+-- Serve files from the data directory
 
 import Control.Monad.IO.Class
 

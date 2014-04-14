@@ -17,9 +17,10 @@ import System.Random
 
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
-import System.Tianbar.Plugin.Basic
 import System.Tianbar.Plugin.Combined
+import System.Tianbar.Plugin.DataDirectory
 import System.Tianbar.Plugin.DBus
+import System.Tianbar.Plugin.GSettings
 import System.Tianbar.Plugin.Socket
 
 data Server = Server { serverOverrideURI :: URI -> URI
@@ -35,10 +36,12 @@ startServer c = do
     portNum <- socketPort sock
     return $ Server (handleURI portNum prefix) (killServer thread plugins)
 
-type AllPlugins = Combined DBusPlugin (
-                  Combined SocketPlugin (
-                  Combined DataDirectory (
-                  Combined Empty Empty)))
+type AllPlugins =
+    Combined DataDirectory (
+        Combined DBusPlugin (
+            Combined GSettings (
+                Combined SocketPlugin (
+                    Combined Empty Empty))))
 
 runServer :: Plugin p => Socket -> String -> p -> IO ()
 runServer sock prefix plugin = do
