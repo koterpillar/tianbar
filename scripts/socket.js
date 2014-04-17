@@ -1,5 +1,7 @@
 /*
  * A plugin to connect to UNIX domain sockets.
+ *
+ * Requires 'jquery' to be available through RequireJS.
  */
 define(['jquery', './tianbar'], function ($, tianbar) {
   "use strict";

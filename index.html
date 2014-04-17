@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Require.js is bundled with Tianbar -->
+        <script src="tianbar:///data/scripts/vendor/require.js"></script>
+        <script>
+          require.config({
+            paths: {
+              // All Tianbar widgets are under tianbar:///data/scripts
+              'tianbar': 'tianbar:///data/scripts',
+              // Bundled libraries (required for widgets) are in
+              // 'vendor' subdirectory.
+              'jquery': 'tianbar:///data/scripts/vendor/jquery',
+              'moment': 'tianbar:///data/scripts/vendor/moment'
+            }
+          });
+        </script>
+        <style type="text/css">
+          * {
+              margin: 0;
+              overflow: hidden;
+          }
+
+          body {
+              background: linear-gradient(to bottom, #e4fcee 0%,#daf8e6 40%,#c3f7d9 100%);
+              margin: 0px 4px;
+              font-family: sans-serif;
+              font-size: 16px;
+              text-shadow: 0 0 10px white, 0 0 10px white, 0 0 10px white;
+              cursor: default;
+          }
+        </style>
+    </head>
+    <body>
+        <div class="widget-xmonad">Tianbar</div>
+        <div class="widget-time widget-right"></div>
+        <div class="widget-power widget-right"></div>
+        <div class="widget-volume widget-right"></div>
+        <div class="widget-weather widget-right"></div>
+    </body>
+</html>
