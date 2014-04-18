@@ -14,28 +14,54 @@
               'moment': 'tianbar:///data/scripts/vendor/moment'
             }
           });
+
+          // Load the necessary widgets
+          require([
+              'tianbar/power',
+              'tianbar/time',
+              'tianbar/weather'
+          ]);
         </script>
         <style type="text/css">
+          /* All the styling is in CSS. */
           * {
               margin: 0;
               overflow: hidden;
           }
 
           body {
-              background: linear-gradient(to bottom, #e4fcee 0%,#daf8e6 40%,#c3f7d9 100%);
-              margin: 0px 4px;
+              background: -webkit-linear-gradient(-90deg,
+                #cff0ff 00px, #cff0ff 05px,
+                #dccfff 05px, #dccfff 10px,
+                #ffd3cf 10px, #ffd3cf 15px,
+                #e3f6c8 15px, #e3f6c8 20px,
+                #ffdabd 20px, #ffdabd 25px
+              ) repeat-x;
+              color: brown;
+              text-shadow: 0px 0px 2px orange;
+              background-size: 25px 25px;
+              margin: 3px 4px;
               font-family: sans-serif;
               font-size: 16px;
-              text-shadow: 0 0 10px white, 0 0 10px white, 0 0 10px white;
               cursor: default;
+          }
+
+          .widget-left {
+            float: left;
+            margin-right: 15px;
+          }
+
+          .widget-right {
+            float: right;
+            margin-left: 15px;
           }
         </style>
     </head>
     <body>
-        <div class="widget-xmonad">Tianbar</div>
-        <div class="widget-time widget-right"></div>
-        <div class="widget-power widget-right"></div>
-        <div class="widget-volume widget-right"></div>
-        <div class="widget-weather widget-right"></div>
+        <span class="widget-left title">Tianbar</span>
+        <!-- Each widget recognizes its own class. -->
+        <span class="widget-right widget-time"></span>
+        <span class="widget-right widget-power"></span>
+        <span class="widget-right widget-weather"></span>
     </body>
 </html>
