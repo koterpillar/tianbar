@@ -15,12 +15,15 @@ import Graphics.UI.Gtk.WebKit.WebWindowFeatures
 
 import Network.URI
 
+import System.Directory
 import System.Environment.XDG.BaseDir
 
 import System.Tianbar.Callbacks
 import System.Tianbar.Configuration
 import System.Tianbar.Server
 import System.Tianbar.Utils
+
+import Paths_tianbar
 
 tianbarWebView :: IO WebView
 tianbarWebView = do
@@ -92,8 +95,14 @@ tianbarWebView = do
 loadIndexPage :: WebView -> IO ()
 loadIndexPage wk = do
     htmlFile <- getUserConfigFile appName "index.html"
-    html <- readFile htmlFile
-    webViewLoadHtmlString wk html $ "file://" ++ htmlFile
+
+    -- If the file does not exist, copy an example file over
+    exists <- doesFileExist htmlFile
+    unless exists $ do
+        exampleHtml <- getDataFileName "index.html"
+        copyFile exampleHtml htmlFile
+
+    webViewLoadUri wk $ "file://" ++ htmlFile
 
 tianbarWebkitNew :: IO Widget
 tianbarWebkitNew = do
