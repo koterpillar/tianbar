@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+tianbar &
+PID=$!
+sleep 2
+WINDOW_ID=$(xwininfo -tree -root |
+	grep '"tianbar"' |
+	head -n 1 |
+	awk '{print $1}'
+)
+xwd -id $WINDOW_ID | convert - PNG:- > screen.png
+kill $PID
