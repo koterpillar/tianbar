@@ -13,11 +13,15 @@ category:            System
 build-type:          Simple
 cabal-version:       >=1.10
 data-files:          README.md
+                   , index.html
                    , scripts/dbus.js
                    , scripts/power.js
                    , scripts/socket.js
                    , scripts/tianbar.js
                    , scripts/time.js
+                   , scripts/vendor/jquery.js
+                   , scripts/vendor/moment.js
+                   , scripts/vendor/require.js
                    , scripts/volume.js
                    , scripts/weather.js
                    , scripts/xmonad.js
@@ -27,6 +31,7 @@ executable tianbar
   build-depends:       base >3 && <5
                      , aeson ==0.6.*
                      , containers ==0.5.*
+                     , directory ==1.2.*
                      , dbus >=0.10.7 && <0.11
                      , gtk ==0.12.*
                      , gtk-traymanager ==0.1.*

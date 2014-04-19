@@ -14,16 +14,13 @@ Tianbar will show `index.html` from its [XDG configuration directory][xdg]
 (usually `$HOME/.config/taffybar`). It it up to you to create that, add styles,
 widgets and other behavior.
 
-Widgets
--------
-
 A small collection of widgets written in JavaScript is bundled with Tianbar,
-see `scripts` directory. To include them on your page, use
-`tianbar:///data/` prefix, e.g. `tianbar:///data/scripts/time.js`.
+see `scripts` directory. Widgets are loaded using [RequireJS][requirejs],
+which, as well as [jQuery][jquery] and other libraries required, are bundled
+with Tianbar.
 
-Most widgets require third-party libraries such as [jQuery][jquery] and
-[RequireJS][requirejs], and neither of those is distributed with Tianbar --
-see individual widget documentation and obtain the libraries manually.
+For an example of RequireJS configuration, see the
+[example index.html](index.html).
 
 ### Power
 

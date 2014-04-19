@@ -14,11 +14,11 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   self.HEIGHT = 8;
   self.WIDTH = 25;
 
-  self.FILL_COLOR = 'black';
+  self.FILL_COLOR = null;
   self.FILL_LOW_COLOR = 'red';
   self.EMPTY_COLOR = 'transparent';
   self.SEGMENT_COLOR = '#888';
-  self.OUTLINE_COLOR = 'black';
+  self.OUTLINE_COLOR = null;
 
   self.DEFAULT_TIME = 4 * self.HOUR;
   self.LOW_TIME = self.HOUR / 4;
@@ -45,6 +45,18 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     Phone: 8
   };
 
+  self.widget = function () {
+    return $('.widget-power');
+  };
+
+  self.fill_color = function () {
+    return self.FILL_COLOR || self.widget().css('color');
+  };
+
+  self.outline_color = function () {
+    return self.OUTLINE_COLOR || self.widget().css('color');
+  };
+
   self.block = function (width, color, border, leftBorder) {
     var result = $('<div />');
     result.css({
@@ -52,8 +64,9 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       'background-color': color,
       'width': width - (border ? 1 : 0),
       'height': self.HEIGHT,
-      'border-top': '1px solid black',
-      'border-bottom': '1px solid black',
+      'border-top': '1px solid',
+      'border-bottom': '1px solid',
+      'border-color': self.outline_color(),
       'margin-top': -1,
       'margin-bottom': -1
     });
@@ -117,7 +130,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     });
 
     var fillColor = timeToEmpty > self.LOW_TIME ?
-      self.FILL_COLOR : self.FILL_LOW_COLOR;
+      self.fill_color() : self.FILL_LOW_COLOR;
     var firstSegment = true;
     if (haveTTE) {
       for (; timeToEmpty > self.HOUR; timeToEmpty -= self.HOUR) {
@@ -125,7 +138,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
           hour_width,
           fillColor,
           self.SEGMENT_COLOR,
-          firstSegment ? self.OUTLINE_COLOR : null
+          firstSegment ? self.outline_color() : null
         ));
         firstSegment = false;
       }
@@ -134,7 +147,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       timeToEmpty / self.HOUR * hour_width,
       fillColor,
       null,
-      firstSegment ? self.OUTLINE_COLOR : null
+      firstSegment ? self.outline_color() : null
     ));
 
     if (haveTTF) {
@@ -154,7 +167,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
     result.append($('<span>').css({
       'display': 'inline-block',
-      'background-color': self.OUTLINE_COLOR,
+      'background-color': self.outline_color(),
       'width': 1,
       'height': self.TERMINAL_HEIGHT,
       'margin-top': (self.HEIGHT - self.TERMINAL_HEIGHT) / 2,
@@ -204,7 +217,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       $.when.apply($, queries).then(function (results) {
         results = Array.prototype.slice.call(arguments, 0);
 
-        var widget = $('.widget-power');
+        var widget = self.widget();
         widget.empty();
         $.each(results, function (_, st) {
           st = st.body[0];

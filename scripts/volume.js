@@ -1,5 +1,7 @@
 /*
  * A widget to show and control the system volume.
+ *
+ * Requires 'jquery' to be available through RequireJS.
  */
 define(['jquery', './socket'], function ($, socket) {
   "use strict";

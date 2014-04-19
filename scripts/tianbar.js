@@ -1,5 +1,7 @@
 /*
- * Support infrastructure for Tianbar
+ * Support infrastructure for Tianbar.
+ *
+ * Requires 'jquery' to be available through RequireJS.
  */
 define(['jquery'], function ($) {
   /**

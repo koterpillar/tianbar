@@ -1,5 +1,7 @@
 /*
  * A plugin to receive DBus events.
+ *
+ * Requires 'jquery' to be available through RequireJS.
  */
 define(['jquery', './tianbar'], function ($, tianbar) {
   "use strict";
