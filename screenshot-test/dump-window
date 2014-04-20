@@ -2,9 +2,14 @@
 
 DIR=$(dirname $0)
 
+TMP_CONFIG=$(mktemp -d)
+
+trap "rm -rf $TMP_CONFIG" EXIT
+
 LD_PRELOAD=/usr/lib/faketime/libfaketimeMT.so.1 \
 FAKETIME='@2014-02-25 11:22:33' \
 LC_ALL=C \
+XDG_CONFIG_HOME=$TMP_CONFIG \
 dbus-launch \
 $DIR/../dist/build/tianbar/tianbar &
 
