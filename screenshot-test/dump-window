@@ -6,7 +6,7 @@ LD_PRELOAD=/usr/lib/faketime/libfaketimeMT.so.1 \
 FAKETIME='@2014-02-25 11:22:33' \
 LC_ALL=C \
 XDG_CONFIG_HOME=$DIR/config \
-	tianbar &
+	$DIR/../dist/build/tianbar/tianbar &
 PID=$!
 sleep 5
 WINDOW_ID=$(xwininfo -tree -root |
