@@ -17,9 +17,9 @@ script:
   - cabal build
   # No tests yet
   - cabal test
-  - ./screenshot-test/test
   - cabal sdist
   - cabal install dist/tianbar*.tar.gz
+  - ./screenshot-test/test
 
 env:
   matrix:
