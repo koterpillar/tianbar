@@ -1,12 +1,20 @@
 #!/bin/sh -e
 
-tianbar &
+DIR=$(dirname $0)
+
+LD_PRELOAD=$DIR/libfaketimeMT.so.1 \
+FAKETIME='@2014-02-25 11:22:33' \
+LC_ALL=C \
+XDG_CONFIG_HOME=$DIR/config \
+	tianbar &
 PID=$!
-sleep 2
+sleep 5
 WINDOW_ID=$(xwininfo -tree -root |
 	grep '"tianbar"' |
 	head -n 1 |
 	awk '{print $1}'
 )
-xwd -id $WINDOW_ID | convert - PNG:- > screen.png
+xwd -id $WINDOW_ID | convert - PNG:- > $DIR/actual.png
 kill $PID
+
+diff -b $DIR/actual.png $DIR/expected.png || (base64 $DIR/actual.png && false)
