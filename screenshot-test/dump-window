@@ -9,7 +9,7 @@ XDG_CONFIG_HOME=$DIR/config \
 dbus-launch \
 	$DIR/../dist/build/tianbar/tianbar &
 PID=$!
-sleep 5
+sleep 20
 WINDOW_ID=$(xwininfo -tree -root |
 	grep '"tianbar"' |
 	head -n 1 |
