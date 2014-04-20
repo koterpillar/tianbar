@@ -2,7 +2,7 @@
 
 DIR=$(dirname $0)
 
-LD_PRELOAD=$DIR/libfaketimeMT.so.1 \
+LD_PRELOAD=/usr/lib/faketime/libfaketimeMT.so.1 \
 FAKETIME='@2014-02-25 11:22:33' \
 LC_ALL=C \
 XDG_CONFIG_HOME=$DIR/config \

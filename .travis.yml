@@ -1,6 +1,7 @@
 language: haskell
 
 before_install:
+  - sudo apt-get install libfaketime
   - cabal install gtk2hs-buildtools hlint
   - travis/cabal-apt-install $mode
   - npm install jshint
@@ -14,7 +15,9 @@ script:
   - hlint src
   - jshint --show-non-errors scripts
   - cabal build
+  # No tests yet
   - cabal test
+  - ./screenshot-test/test
   - cabal sdist
   - cabal install dist/tianbar*.tar.gz
 
