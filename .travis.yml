@@ -1,7 +1,7 @@
 language: haskell
 
 before_install:
-  - sudo apt-get install libfaketime
+  - sudo apt-get install faketime
   - cabal install gtk2hs-buildtools hlint
   - travis/cabal-apt-install $mode
   - npm install jshint
