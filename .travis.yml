@@ -1,7 +1,7 @@
 language: haskell
 
 before_install:
-  - sudo apt-get install --no-install-recommends faketime x11-apps
+  - sudo apt-get install --no-install-recommends faketime strace x11-apps x11-utils
   - cabal install gtk2hs-buildtools hlint
   - travis/cabal-apt-install $mode
   - npm install jshint
