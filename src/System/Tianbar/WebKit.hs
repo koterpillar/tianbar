@@ -99,6 +99,8 @@ loadIndexPage wk = do
     -- If the file does not exist, copy an example file over
     exists <- doesFileExist htmlFile
     unless exists $ do
+        -- Ensure config directory exists
+        getUserConfigDir appName >>= createDirectoryIfMissing True
         exampleHtml <- getDataFileName "index.html"
         copyFile exampleHtml htmlFile
 
