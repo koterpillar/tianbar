@@ -11,7 +11,7 @@ FAKETIME='@2014-02-25 11:22:33' \
 LC_ALL=C \
 XDG_CONFIG_HOME=$TMP_CONFIG \
 dbus-launch \
-strace $DIR/../dist/build/tianbar/tianbar &
+strace -f $DIR/../dist/build/tianbar/tianbar &
 
 PID=$!
 sleep 60
