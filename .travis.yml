@@ -1,5 +1,9 @@
 language: haskell
 
+ghc:
+  - 7.8
+  - 7.6
+
 before_install:
   - cabal install gtk2hs-buildtools hlint
   - travis/cabal-apt-install $mode
@@ -28,4 +32,4 @@ after_success:
   - git checkout -- tianbar.cabal
   - rm dist/tianbar*.tar.gz
   - cabal sdist
-  - if [ $TRAVIS_PULL_REQUEST == 'false' -a $TRAVIS_BRANCH == 'release' ]; then cabal upload dist/tianbar*.tar.gz --username=AlexeyKotlyarov --password=$PASSWORD; fi
+  - if ghc --version | grep -q 7.8 && [ $TRAVIS_PULL_REQUEST == 'false' -a $TRAVIS_BRANCH == 'release' ]; then cabal upload dist/tianbar*.tar.gz --username=AlexeyKotlyarov --password=$PASSWORD; fi
