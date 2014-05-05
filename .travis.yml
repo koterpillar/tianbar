@@ -5,13 +5,15 @@ ghc:
   - 7.6
 
 before_install:
-  - cabal install gtk2hs-buildtools hlint
-  - travis/cabal-apt-install $mode
+  - cabal install alex gtk2hs-buildtools happy hlint
   - npm install jshint
 
 install:
+  - sudo apt-get install libwebkitgtk-dev
   # Treat warnings as errors
   - "sed -Ei 's/ghc-options: +/\0-Werror /' tianbar.cabal"
+  - cabal sandbox init
+  - cabal install --only-dependencies
   - cabal configure $mode -fWerror
 
 script:
