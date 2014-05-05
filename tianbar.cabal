@@ -37,7 +37,7 @@ executable tianbar
                      , gtk-traymanager ==0.1.*
                      , happstack-server == 7.3.*
                      , network ==2.4.*
-                     , process ==1.1.*
+                     , process ==1.2.*
                      , random ==1.0.*
                      , split ==0.2.*
                      , text ==0.11.*
