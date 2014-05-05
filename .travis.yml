@@ -11,6 +11,7 @@ before_install:
 install:
   # Treat warnings as errors
   - "sed -Ei 's/ghc-options: +/\0-Werror /' tianbar.cabal"
+  - cabal sandbox init
   - cabal install --only-dependencies
   - cabal configure $mode -fWerror
 
