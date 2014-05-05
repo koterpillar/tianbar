@@ -9,6 +9,7 @@ before_install:
   - npm install jshint
 
 install:
+  - sudo apt-get install libwebkitgtk-dev
   # Treat warnings as errors
   - "sed -Ei 's/ghc-options: +/\0-Werror /' tianbar.cabal"
   - cabal sandbox init
