@@ -232,7 +232,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   $(document).ready(function () {
     dbus.system.listen(
       {
-        iface: 'org.freedesktop.UPower'
+        path: '/org/freedesktop/UPower'
       },
       self.refresh
     );
