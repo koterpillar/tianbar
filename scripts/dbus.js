@@ -19,7 +19,7 @@ define(['jquery', './tianbar'], function ($, tianbar) {
        * Listen for a particular DBus event.
        * @param match {Object} DBus match conditions ('path', 'iface', 'member')
        * @param handler {Function} The function to call upon receiving the event
-       * @returns {Callbacks} A jQuery callback object
+       * @returns {Event} A Tianbar event object
        */
       listen: function (match) {
         var evt = tianbar.createEvent();
@@ -32,6 +32,18 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         });
 
         return evt.callback;
+      },
+
+      /**
+       * Stop listening for a DBus event.
+       * @param evt {Event} A Tianbar event object returned by listen().
+       */
+      removeMatch: function (evt) {
+        $.ajax('tianbar:///dbus/' + busName + '/stop', {
+          data: {
+            index: evt.index
+          }
+        });
       },
 
       /**
