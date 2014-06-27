@@ -223,8 +223,10 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       // TODO: support device add and removal
       $.each(devices, function(_, device) {
         dbus.system.listen(
-          { path: device },
-          function() { self.refreshDevice(device); }
+          { path: device }
+        ).add(function() {
+            self.refreshDevice(device);
+          }
         );
         self.refreshDevice(device);
       });
@@ -250,9 +252,8 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
   $(document).ready(function () {
     dbus.system.listen(
-      { path: '/org/freedesktop/UPower' },
-      self.refresh
-    );
+      { path: '/org/freedesktop/UPower' }
+    ).add(self.refresh);
     self.refresh();
   });
 
