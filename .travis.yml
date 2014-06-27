@@ -24,14 +24,12 @@ script:
   - cabal sdist
   - cabal install dist/tianbar*.tar.gz
 
-env:
-  matrix:
-    - mode="--enable-tests" script="cabal test --show-details=always"
-  global:
-    secure: La3uBTMLW+gWTzRKsVmh+xN7PSVsGNHaqUIIXbEvv2gcdH5drCtsFS56VZ/bXR3IOpDhFX6+M6qXkMYlWcsCswvaecmjNwqOq8lc5WYjLdkinRugwgEVv5+tsS3Ybgnz+A6hvJIkNnkwHa8kSVA2ppOA6ZDteZguvDk73XGQPs0=
-
-after_success:
-  - git checkout -- tianbar.cabal
-  - rm dist/tianbar*.tar.gz
-  - cabal sdist
-  - if ghc --version | grep -q 7.8 && [ $TRAVIS_PULL_REQUEST == 'false' -a $TRAVIS_BRANCH == 'release' ]; then cabal upload dist/tianbar*.tar.gz --username=AlexeyKotlyarov --password=$PASSWORD; fi
+deploy:
+  provider: hackage
+  username: AlexeyKotlyarov
+  password:
+    secure: "aVtsJTRT44bUyHEWJEc/Qxa6+HMk+fLq8sNSx/pjHpwivaBjSNVLYQoSo9UHCqU3d7s/vSUhQGCKpg2XzIFh6feUR88OcZH8hnDEgfppCUMMHRr4DOXOStSBBcbjXtNjxmgkqoyJeneaLT9ok5gs5Y0poKdkkngoD4bEEEfbcH0="
+  on:
+    branch: release
+    repo: koterpillar/tianbar
+    ghc: 7.8
