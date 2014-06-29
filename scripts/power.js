@@ -193,6 +193,23 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
   self.updated = $.Callbacks();
 
+  // A map of device paths to device states
+  self.devices = {};
+
+  // Display the status of all the devices
+  self.display = function () {
+    // TODO: support updating individual devices
+    var widget = self.widget();
+    widget.empty();
+
+    $.each(self.devices, function (_, device) {
+      widget.append(self.formatDevice(device));
+    });
+
+    self.updated.fire();
+  };
+
+  // Refresh the device list and each device status
   self.refresh = function () {
     dbus.system.call({
       'destination': 'org.freedesktop.UPower',
@@ -203,39 +220,40 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       ]
     }).done(function (devices) {
       devices = devices.body[0];
-      var queries = $.map(devices, function(device) {
-        return dbus.system.call({
-          'destination': 'org.freedesktop.UPower',
-          'path': device,
-          'iface': 'org.freedesktop.DBus.Properties',
-          'member': 'GetAll',
-          'body': [
-            'string:org.freedesktop.UPower.Device',
-          ]
-        });
+      // TODO: support device add and removal
+      $.each(devices, function(_, device) {
+        dbus.system.listen(
+          { path: device }
+        ).add(function() {
+            self.refreshDevice(device);
+          }
+        );
+        self.refreshDevice(device);
       });
-      $.when.apply($, queries).then(function (results) {
-        results = Array.prototype.slice.call(arguments, 0);
+    });
+  };
 
-        var widget = self.widget();
-        widget.empty();
-        $.each(results, function (_, st) {
-          st = st.body[0];
-          widget.append(self.formatDevice(st));
-        });
-
-        self.updated.fire();
-      });
+  // Refresh an individual device
+  self.refreshDevice = function (device) {
+    dbus.system.call({
+      'destination': 'org.freedesktop.UPower',
+      'path': device,
+      'iface': 'org.freedesktop.DBus.Properties',
+      'member': 'GetAll',
+      'body': [
+        'string:org.freedesktop.UPower.Device',
+      ]
+    }).done(function (properties) {
+      properties = properties.body[0];
+      self.devices[device] = properties;
+      self.display();
     });
   };
 
   $(document).ready(function () {
     dbus.system.listen(
-      {
-        iface: 'org.freedesktop.UPower'
-      },
-      self.refresh
-    );
+      { path: '/org/freedesktop/UPower' }
+    ).add(self.refresh);
     self.refresh();
   });
 
