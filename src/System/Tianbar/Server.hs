@@ -27,9 +27,12 @@ data Server = Server { serverOverrideURI :: URI -> URI
                      , stopServer :: IO ()
                      }
 
+localhost :: String
+localhost = "127.0.0.1"
+
 startServer :: Callbacks -> IO Server
 startServer c = do
-    sock <- bindIPv4 "127.0.0.1" $ fromIntegral aNY_PORT
+    sock <- bindIPv4 localhost $ fromIntegral aNY_PORT
     prefix <- replicateM 20 $ randomRIO ('a', 'z')
     plugins <- initialize c :: IO AllPlugins
     thread <- forkIO $ runServer sock prefix plugins
@@ -59,7 +62,7 @@ handleURI portNum prefix uri | uriScheme uri == "tianbar:" = uri'
                              | otherwise = uri
     where uri' = uri { uriScheme = "http:"
                      , uriAuthority = Just URIAuth { uriUserInfo = ""
-                                                   , uriRegName = "localhost"
+                                                   , uriRegName = localhost
                                                    , uriPort = ':' : show portNum
                                                    }
                      , uriPath = "/" ++ prefix ++ uriPath uri
