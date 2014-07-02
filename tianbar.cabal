@@ -1,5 +1,5 @@
 name:                tianbar
-version:             0.4.5.0
+version:             0.4.6.0
 synopsis:            A desktop bar based on WebKit
 description:
   A desktop bar using WebKit for rendering as much as possible.
