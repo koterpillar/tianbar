@@ -17,6 +17,14 @@ define(['jquery', 'moment'], function ($, moment) {
     var dt = moment();
     var clockText = dt.format(config.format);
     $('.widget-time').text(clockText);
+
+    var interval = 59 - dt.second();
+    if (interval < 1) {
+      interval = 1;
+    } else if (interval > 5) {
+      interval = 5;
+    }
+    setTimeout(updateClock, interval * 1000);
   }
 
   $(document).ready(function () {
@@ -27,7 +35,6 @@ define(['jquery', 'moment'], function ($, moment) {
       moment.lang(navigator.language.replace(/-.+/, ''));
     }
     updateClock();
-    setInterval(updateClock, 1000);
   });
 
   return config;
