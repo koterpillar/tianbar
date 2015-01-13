@@ -30,6 +30,7 @@ deploy:
   password:
     secure: "aVtsJTRT44bUyHEWJEc/Qxa6+HMk+fLq8sNSx/pjHpwivaBjSNVLYQoSo9UHCqU3d7s/vSUhQGCKpg2XzIFh6feUR88OcZH8hnDEgfppCUMMHRr4DOXOStSBBcbjXtNjxmgkqoyJeneaLT9ok5gs5Y0poKdkkngoD4bEEEfbcH0="
   on:
-    branch: release
+    tags: true
+    all_branches: true
     repo: koterpillar/tianbar
     ghc: 7.8
