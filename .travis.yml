@@ -5,7 +5,7 @@ ghc:
   - 7.6
 
 before_install:
-  - cabal install alex gtk2hs-buildtools happy hlint
+  - cabal install alex Cabal gtk2hs-buildtools happy hlint
   - npm install jshint
 
 install:
