@@ -1,7 +1,3 @@
-machine:
-  ghc:
-    version: 7.8.3
-
 dependencies:
   pre:
     - cabal install alex gtk2hs-buildtools happy hlint
@@ -14,6 +10,6 @@ test:
     - jshint --show-non-errors scripts
     - "sed -Ei 's/ghc-options: +/\\0-Werror /' tianbar.cabal"
     - cabal test
-    - "sed -Ei 's/-Werror//' tianbar.cabal"
+    - "sed -Ei 's/-Werror //' tianbar.cabal"
     - cabal sdist
     - cabal install dist/tianbar*.tar.gz
