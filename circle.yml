@@ -1,0 +1,19 @@
+machine:
+  ghc:
+    version: 7.8.4
+
+dependencies:
+  pre:
+    - cabal install alex Cabal gtk2hs-buildtools happy hlint
+    - npm install jshint
+    - sudo apt-get install libwebkitgtk-dev
+
+test:
+  override:
+    - hlint src
+    - jshint --show-non-errors scripts
+    - "sed -Ei 's/ghc-options: +/\0-Werror /' tianbar.cabal"
+    - cabal test
+    - "sed -Ei 's/-Werror//' tianbar.cabal"
+    - cabal sdist
+    - cabal install dist/tianbar*.tar.gz
