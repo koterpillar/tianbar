@@ -4,7 +4,7 @@ machine:
 
 dependencies:
   pre:
-    - cabal install alex Cabal gtk2hs-buildtools happy hlint
+    - cabal install alex gtk2hs-buildtools happy hlint
     - npm install jshint
     - sudo apt-get install libwebkitgtk-dev
 
@@ -12,7 +12,7 @@ test:
   override:
     - hlint src
     - jshint --show-non-errors scripts
-    - "sed -Ei 's/ghc-options: +/\0-Werror /' tianbar.cabal"
+    - "sed -Ei 's/ghc-options: +/\\0-Werror /' tianbar.cabal"
     - cabal test
     - "sed -Ei 's/-Werror//' tianbar.cabal"
     - cabal sdist
