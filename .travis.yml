@@ -18,7 +18,7 @@ script:
   - hlint src
   - jshint --show-non-errors scripts
   # Treat warnings as errors
-  - "sed -Ei 's/ghc-options: +/\0-Werror /' tianbar.cabal"
+  - "sed -Ei 's/ghc-options: +/\\0-Werror /' tianbar.cabal"
   - cabal build
   - cabal test
   - "sed -Ei 's/-Werror//' tianbar.cabal"
