@@ -21,11 +21,10 @@ script:
   - "sed -Ei 's/ghc-options: +/\\0-Werror /' tianbar.cabal"
   - cabal build
   - cabal test
-  - "sed -Ei 's/-Werror//' tianbar.cabal"
-  - cat tianbar.cabal
+  # Undo Werror replacement
+  - "sed -Ei 's/-Werror //' tianbar.cabal"
   - cabal sdist
   - cabal install dist/tianbar*.tar.gz
-  - cabal upload -c dist/tianbar*.tar.gz
 
 deploy:
   provider: hackage
