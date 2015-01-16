@@ -1,6 +1,6 @@
 dependencies:
   pre:
-    - cabal install alex gtk2hs-buildtools happy hlint
+    - cabal install alex Cabal gtk2hs-buildtools happy hlint
     - npm install jshint
     - sudo apt-get install libwebkitgtk-dev
 
