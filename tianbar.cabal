@@ -1,5 +1,5 @@
 name:                tianbar
-version:             0.4.6.2
+version:             0.4.6.3
 synopsis:            A desktop bar based on WebKit
 description:
   A desktop bar using WebKit for rendering as much as possible.
@@ -66,7 +66,6 @@ executable tianbar
                      , System.Tianbar.WebKit
   c-sources:           src/gdk_property_change_wrapper.c
   ghc-options:         -Wall -rtsopts -threaded
-  ghc-prof-options:    -auto-all
 
 library
   default-language:    Haskell2010
@@ -80,7 +79,6 @@ library
   hs-source-dirs:      src
   exposed-modules:     System.Tianbar.XMonadLog
   ghc-options:         -Wall -rtsopts
-  ghc-prof-options:    -auto-all
 
 source-repository head
   type:                git
