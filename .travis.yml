@@ -10,17 +10,19 @@ before_install:
 
 install:
   - sudo apt-get install libwebkitgtk-dev
-  # Treat warnings as errors
-  - "sed -Ei 's/ghc-options: +/\0-Werror /' tianbar.cabal"
   - cabal sandbox init
-  - cabal install --only-dependencies
-  - cabal configure $mode -fWerror
+  - cabal install --only-dependencies --enable-tests
+  - cabal configure --enable-tests
 
 script:
   - hlint src
   - jshint --show-non-errors scripts
+  # Treat warnings as errors
+  - "sed -Ei 's/ghc-options: +/\\0-Werror /' tianbar.cabal"
   - cabal build
   - cabal test
+  # Undo Werror replacement
+  - "sed -Ei 's/-Werror //' tianbar.cabal"
   - cabal sdist
   - cabal install dist/tianbar*.tar.gz
 
