@@ -11,8 +11,8 @@ before_install:
 install:
   - sudo apt-get install libwebkitgtk-dev
   - cabal sandbox init
-  - cabal install --only-dependencies
-  - cabal configure $mode -fWerror
+  - cabal install --only-dependencies --enable-tests
+  - cabal configure --enable-tests
 
 script:
   - hlint src
@@ -22,6 +22,7 @@ script:
   - cabal build
   - cabal test
   - "sed -Ei 's/-Werror//' tianbar.cabal"
+  - cat tianbar.cabal
   - cabal sdist
   - cabal install dist/tianbar*.tar.gz
   - cabal upload -c dist/tianbar*.tar.gz
