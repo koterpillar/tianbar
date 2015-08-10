@@ -99,6 +99,11 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
     var percentage = st.Percentage;
 
+    var displayPercentage = percentage;
+    if (st.State == self.DEVICE_STATE.FullyCharged) {
+      displayPercentage = 100;
+    }
+
     var timeToEmpty = st.TimeToEmpty;
     var timeToFull = st.TimeToFull;
 
@@ -107,20 +112,22 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
     // Sanity checks if one or the other time is missing
     if (haveTTE && !haveTTF) {
-      if (percentage > 0) {
-        timeToFull = timeToEmpty * (100 - percentage) / percentage;
+      if (displayPercentage > 0) {
+        timeToFull = timeToEmpty *
+          (100 - displayPercentage) / displayPercentage;
       } else {
         timeToFull = self.DEFAULT_TIME;
       }
     } else if (haveTTF && !haveTTE) {
-      if (percentage < 100) {
-        timeToEmpty = timeToFull * percentage / (100 - percentage);
+      if (displayPercentage < 100) {
+        timeToEmpty = timeToFull *
+          displayPercentage / (100 - displayPercentage);
       } else {
         timeToFull = self.DEFAULT_TIME;
       }
     } else if (!haveTTF && !haveTTE) {
-      timeToEmpty = self.DEFAULT_TIME * percentage;
-      timeToFull = self.DEFAULT_TIME * (100 - percentage);
+      timeToEmpty = self.DEFAULT_TIME * displayPercentage;
+      timeToFull = self.DEFAULT_TIME * (100 - displayPercentage);
     }
 
     var hour_width = self.WIDTH * self.HOUR / (timeToEmpty + timeToFull);
@@ -174,14 +181,21 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       'margin-bottom': (self.HEIGHT - self.TERMINAL_HEIGHT) / 2
     }));
 
-    var title = percentage + '%';
-    if (st.TimeToEmpty !== 0) {
-      title += ' (' + moment.duration(st.TimeToEmpty, 's').humanize() + ')';
+    var title;
+    if (st.State === self.DEVICE_STATE.FullyCharged) {
+      title = '';
+    } else {
+      title = percentage + '%';
+      if (st.TimeToEmpty !== 0) {
+        title += ' (' + moment.duration(st.TimeToEmpty, 's').humanize() + ')';
+      }
     }
+
     if (st.Type != self.DEVICE_TYPE.Battery) {
       title += '\n' + st.Vendor + ' ' + st.Model;
     }
 
+    title = title.trim();
     result.attr('title', title);
 
     if (st.State === self.DEVICE_STATE.Charging) {
