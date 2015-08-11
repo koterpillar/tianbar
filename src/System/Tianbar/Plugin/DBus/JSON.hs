@@ -27,6 +27,8 @@ instance ToJSON Variant where
         TypeObjectPath -> let Just p = fromVariant v :: Maybe ObjectPath in
             toJSON $ formatObjectPath p
 
+        TypeUnixFd -> let Just fd = fromVariant v :: Maybe Word32 in toJSON fd
+
         TypeVariant -> let Just n = fromVariant v :: Maybe Variant in toJSON n
         TypeArray _ -> let Just a = fromVariant v :: Maybe Array in
             toJSON $ arrayItems a
