@@ -3,12 +3,23 @@ language: haskell
 ghc:
   - 7.8
 
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - libwebkitgtk-dev
+
+cache:
+  directories:
+    - $HOME/.cabal
+    - .cabal-sandbox
+
 before_install:
   - cabal install alex Cabal gtk2hs-buildtools happy hlint
   - npm install jshint
 
 install:
-  - sudo apt-get install libwebkitgtk-dev
   - cabal sandbox init
   - cabal install --only-dependencies --enable-tests
   - cabal configure --enable-tests
