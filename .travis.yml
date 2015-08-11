@@ -8,6 +8,10 @@ sudo: false
 addons:
   apt:
     packages:
+      - alex
+      - gtk2hs-buildtools
+      - happy
+      - hlint
       - libwebkitgtk-dev
 
 cache:
@@ -16,7 +20,7 @@ cache:
     - .cabal-sandbox
 
 before_install:
-  - cabal install alex Cabal gtk2hs-buildtools happy hlint
+  - cabal install Cabal
   - npm install jshint
 
 install:
