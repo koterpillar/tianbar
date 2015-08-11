@@ -32,7 +32,7 @@ executable tianbar
                      , aeson >=0.6
                      , containers >=0.5
                      , directory >=1.2
-                     , dbus >=0.10.7
+                     , dbus >=0.10.10
                      , gtk >=0.12
                      , gtk-traymanager >=0.1
                      , happstack-server >= 7.3
