@@ -178,7 +178,8 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       'width': 1,
       'height': self.TERMINAL_HEIGHT,
       'margin-top': (self.HEIGHT - self.TERMINAL_HEIGHT) / 2,
-      'margin-bottom': (self.HEIGHT - self.TERMINAL_HEIGHT) / 2
+      'margin-bottom': (self.HEIGHT - self.TERMINAL_HEIGHT) / 2,
+      'margin-right': 4,
     }));
 
     var title;
