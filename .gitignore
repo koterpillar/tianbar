@@ -1,7 +1,2 @@
-*.hi
-*.o
-*.swp
-/.cabal-sandbox
-/cabal.sandbox.config
-/cabal-dev
+/.stack-work
 /dist
