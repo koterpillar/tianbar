@@ -6,12 +6,17 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
 
-import Graphics.UI.Gtk hiding (disconnect, Signal, Variant)
-import Graphics.UI.Gtk.WebKit.GeolocationPolicyDecision
-import Graphics.UI.Gtk.WebKit.NetworkRequest
-import Graphics.UI.Gtk.WebKit.WebSettings
-import Graphics.UI.Gtk.WebKit.WebView
-import Graphics.UI.Gtk.WebKit.WebWindowFeatures
+import GI.Gtk hiding (main)
+import qualified GI.Gtk as Gtk
+import GI.GtkSignals ()
+import qualified GI.GLib as GLib
+import GI.WebKit
+import GI.WebKitSignals ()
+import GI.WebKitAttributes ()
+
+-- import GI.Properties
+-- import GI.Signals
+import Data.GI.Base
 
 import Network.URI
 
@@ -27,7 +32,7 @@ import Paths_tianbar
 
 tianbarWebView :: IO WebView
 tianbarWebView = do
-    wk <- webViewNew
+    wk <- new WebView []
 
     -- Enable AJAX access to all domains
     wsettings <- webViewGetWebSettings wk

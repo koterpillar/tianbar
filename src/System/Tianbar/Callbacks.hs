@@ -6,8 +6,7 @@ module System.Tianbar.Callbacks (
 
 import Data.Aeson
 
-import Graphics.UI.Gtk
-import Graphics.UI.Gtk.WebKit.WebView
+import GI.WebKit
 
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as E

@@ -4,8 +4,10 @@ packages:
 extra-deps:
 - X11-xft-0.3.1
 - gtk-traymanager-0.1.5
-- webkit-0.14.1.0
+- haskell-gi-0.10.1
+- haskell-gi-base-0.10
 - xdg-basedir-0.2.2
 - xmonad-0.11.1
 - xmonad-contrib-0.11.4
+- webkit-0.14.1.0
 resolver: lts-3.15

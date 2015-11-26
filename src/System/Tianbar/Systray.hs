@@ -2,8 +2,7 @@
 -- very well since it is based on eggtraymanager.
 module System.Tianbar.Systray ( systrayNew ) where
 
-import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Misc.TrayManager
+import GI.Gtk
 
 import System.Tianbar.Configuration
 

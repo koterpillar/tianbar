@@ -1,7 +1,7 @@
 module System.Tianbar.StrutProperties ( setStrutProperties
                                        , StrutProperties ) where
 
-import Graphics.UI.Gtk
+import GI.Gtk
 
 import Foreign
 import Foreign.C.Types
