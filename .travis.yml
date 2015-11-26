@@ -6,10 +6,6 @@ ghc:
 addons:
   apt:
     packages:
-      - alex
-      - gtk2hs-buildtools
-      - happy
-      - hlint
       - libwebkitgtk-dev
 
 before_install:
