@@ -1,44 +1,38 @@
 language: haskell
 
 ghc:
-  - 7.8
-
-sudo: false
+  - 7.8  # Only used for Cabal
 
 addons:
   apt:
     packages:
-      - alex
-      - gtk2hs-buildtools
-      - happy
-      - hlint
       - libwebkitgtk-dev
 
-cache:
-  directories:
-    - $HOME/.cabal
-    - .cabal-sandbox
-
 before_install:
-  - cabal install Cabal
+  - wget https://www.stackage.org/stack/linux-x86_64 -O stack.tar.gz
+  - tar xf stack.tar.gz
+  - mkdir -p $HOME/.local/bin
+  - cp stack-*-linux-x86_64/stack $HOME/.local/bin/stack
+  - stack setup
+  - stack install hlint
   - npm install jshint
 
 install:
-  - cabal sandbox init
-  - cabal install --only-dependencies --enable-tests
-  - cabal configure --enable-tests
+  - stack build
 
 script:
   - hlint src
   - jshint --show-non-errors scripts
   # Treat warnings as errors
   - "sed -Ei 's/ghc-options: +/\\0-Werror /' tianbar.cabal"
-  - cabal build
-  - cabal test
+  - stack test
   # Undo Werror replacement
   - "sed -Ei 's/-Werror //' tianbar.cabal"
-  - cabal sdist
-  - cabal install dist/tianbar*.tar.gz
+
+cache:
+  directories:
+    - $HOME/.stack
+    - .stack-work
 
 deploy:
   provider: hackage
@@ -49,4 +43,5 @@ deploy:
     tags: true
     all_branches: true
     repo: koterpillar/tianbar
-    ghc: 7.8
+
+sudo: false
