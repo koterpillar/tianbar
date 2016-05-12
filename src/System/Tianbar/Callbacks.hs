@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module System.Tianbar.Callbacks (
     callback,
     callbacks,
@@ -6,9 +7,12 @@ module System.Tianbar.Callbacks (
 
 import Data.Aeson
 
-import GI.WebKit
+import GI.Signals
 
-import qualified Data.Text.Lazy as T
+import GI.WebKit2.Objects.WebView
+
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as E
 
 newtype Callbacks = Callbacks WebView
@@ -18,7 +22,8 @@ callbacks = Callbacks
 
 callback :: (ToJSON i, ToJSON p) => Callbacks -> i -> p -> IO ()
 callback (Callbacks wk) index param =
-    postGUIAsync $ webViewExecuteScript wk $ callbackScript index param
+    undefined
+    -- webViewRunJavascript wk (T.pack $ callbackScript index param) Nothing Nothing
 
 callbackScript :: (ToJSON i, ToJSON p) => i -> p -> String
 callbackScript index param =
@@ -29,4 +34,4 @@ callbackScript index param =
           paramStr = showJSON param
 
 showJSON :: ToJSON a => a -> String
-showJSON = T.unpack . E.decodeUtf8 . encode . toJSON
+showJSON = TL.unpack . E.decodeUtf8 . encode . toJSON

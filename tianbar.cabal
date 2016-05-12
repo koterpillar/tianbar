@@ -36,6 +36,10 @@ executable tianbar
                      , dbus >=0.10.10
                      , haskell-gi-base >=0.10
                      , happstack-server >= 7.3
+                     , gi-gdk
+                     , gi-glib
+                     , gi-gtk
+                     , gi-webkit2
                      , network >=2.6
                      , network-uri >=2.6
                      , process >=1.2
@@ -63,6 +67,8 @@ executable tianbar
                      , System.Tianbar.Plugin.Socket
                      , System.Tianbar.Utils
                      , System.Tianbar.WebKit
+                     , GI.Extras
+                     , GI.Signals
   c-sources:           src/gdk_property_change_wrapper.c
   ghc-options:         -Wall -rtsopts -threaded
 

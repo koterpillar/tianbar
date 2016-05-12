@@ -6,17 +6,25 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
 
-import GI.Gtk hiding (main)
-import qualified GI.Gtk as Gtk
-import GI.GtkSignals ()
-import qualified GI.GLib as GLib
-import GI.WebKit
-import GI.WebKitSignals ()
-import GI.WebKitAttributes ()
-
--- import GI.Properties
--- import GI.Signals
+import qualified Data.Text as T
 import Data.GI.Base
+
+import GI.Gdk.Objects.Display
+import GI.Gdk.Objects.Screen
+import GI.Gdk.Structs.Rectangle
+
+import qualified GI.GLib as GLib
+
+import GI.Gtk hiding (main)
+import GI.Gtk.Objects.Widget
+
+import GI.WebKit2.Interfaces.PermissionRequest (permissionRequestAllow)
+import GI.WebKit2.Objects.Settings
+import GI.WebKit2.Objects.WebResource
+import GI.WebKit2.Objects.WebView
+import GI.WebKit2.Objects.WindowProperties
+
+import GI.Signals
 
 import Network.URI
 
@@ -35,53 +43,51 @@ tianbarWebView = do
     wk <- new WebView []
 
     -- Enable AJAX access to all domains
-    wsettings <- webViewGetWebSettings wk
-    set wsettings [webSettingsEnableUniversalAccessFromFileUris := True]
-    webViewSetWebSettings wk wsettings
+    wsettings <- webViewGetSettings wk
+    settingsSetAllowFileAccessFromFileUrls wsettings True
+    webViewSetSettings wk wsettings
 
     -- Enable geolocation
-    _ <- on wk geolocationPolicyDecisionRequested $ \_ decision -> do
-        geolocationPolicyAllow decision
+    _ <- on wk PermissionRequest $ \request -> do
+        -- TODO: This should only match geolocation permission requests
+        permissionRequestAllow request
         return True
 
     -- Initialize plugins, and re-initialize on reloads
     server <- startServer (callbacks wk) >>= newMVar
-    _ <- on wk loadStarted $ \_ -> modifyMVar_ server $ \oldServer -> do
+    _ <- on wk LoadChanged $ \_ -> modifyMVar_ server $ \oldServer -> do
         stopServer oldServer
         startServer (callbacks wk)
 
     -- Process the special overrides
-    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> void $ runMaybeT $ do
-        req <- liftMT nreq
-        uriStr <- MaybeT $ networkRequestGetUri req
-        uri <- liftMT $ parseURI uriStr
-        override <- liftIO $ withMVar server $ return . serverOverrideURI
-        let uri' = override uri
-        liftIO $ networkRequestSetUri req $ show uri'
+    -- FIXME: enable
+    -- _ <- on wk ResourceLoadStarted $ \_ _ nreq _ -> void $ runMaybeT $ do
+    --     req <- liftMT nreq
+    --     uriStr <- MaybeT $ webResourceGetUri req
+    --     uri <- liftMT $ parseURI uriStr
+    --     override <- liftIO $ withMVar server $ return . serverOverrideURI
+    --     let uri' = override uri
+    --     liftIO $ networkRequestSetUri req $ show uri'
 
     -- Handle new window creation
-    _ <- on wk createWebView $ \_ -> do
+    _ <- on wk Create $ \_ -> do
         nwk <- tianbarWebView
 
-        window <- windowNew
+        window <- windowNew WindowTypePopup
         containerAdd window nwk
 
-        _ <- on nwk webViewReady $ do
-            wfeat <- webViewGetWindowFeatures nwk
+        _ <- on nwk ReadyToShow $ do
+            wprop <- webViewGetWindowProperties nwk
+            wgeom <- getWindowPropertiesGeometry wprop
 
-            [wx, wy, ww, wh] <- mapM (get wfeat) [ webWindowFeaturesX
-                                                 , webWindowFeaturesY
-                                                 , webWindowFeaturesWidth
-                                                 , webWindowFeaturesHeight
-                                                 ]
+            [wx, wy, ww, wh] <- mapM ($ wgeom) [ rectangleReadX
+                                               , rectangleReadY
+                                               , rectangleReadWidth
+                                               , rectangleReadHeight
+                                               ]
 
-            windowSetGeometryHints window
-                                       (Nothing :: Maybe Window)
-                                       (Just (ww, wh))
-                                       (Just (ww, wh))
-                                       Nothing
-                                       Nothing
-                                       Nothing
+            -- FIXME: How do I get a non-null Geometry?
+            -- windowSetGeometryHints window (Just newgeom) []
 
             widgetShow window
             widgetShow nwk
@@ -90,9 +96,9 @@ tianbarWebView = do
             windowSetKeepAbove window True
             windowStick window
 
-            return False
+            return ()
 
-        return nwk
+        toWidget nwk
 
     return wk
 
@@ -109,18 +115,19 @@ loadIndexPage wk = do
         exampleHtml <- getDataFileName "index.html"
         copyFile exampleHtml htmlFile
 
-    webViewLoadUri wk $ "file://" ++ htmlFile
+    webViewLoadUri wk $ T.pack $ "file://" ++ htmlFile
 
 tianbarWebkitNew :: IO Widget
 tianbarWebkitNew = do
     l <- tianbarWebView
 
-    _ <- on l realize $ loadIndexPage l
+    _ <- on l Realize $ loadIndexPage l
 
-    Just disp <- displayGetDefault
-    screen <- displayGetScreen disp myScreen
-    (Rectangle _ _ sw _) <- screenGetMonitorGeometry screen myMonitor
-    _ <- on l sizeRequest $ return (Requisition (sw `div` 2) barHeight)
+    disp <- displayGetDefault
+    screen <- displayGetScreen disp (fromIntegral myScreen)
+    monitorRect <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
+    -- FIXME: size request signal
+    -- _ <- on l sizeRequest $ return (Requisition (sw `div` 2) barHeight)
 
     widgetShowAll l
-    return (toWidget l)
+    toWidget l

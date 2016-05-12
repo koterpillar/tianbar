@@ -2,7 +2,6 @@ module System.Tianbar.Plugin.DBus (DBusPlugin) where
 
 -- DBus connectivity
 
-import Control.Applicative
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class

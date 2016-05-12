@@ -1,6 +1,5 @@
 module System.Tianbar.Plugin.Combined where
 
-import Control.Applicative
 import Control.Monad
 
 import System.Tianbar.Plugin
