@@ -37,6 +37,7 @@ executable tianbar
                      , haskell-gi-base >=0.10
                      , happstack-server >= 7.3
                      , gi-gdk
+                     , gi-gio
                      , gi-glib
                      , gi-gtk
                      , gi-webkit2

@@ -9,6 +9,8 @@ import Data.Aeson
 
 import GI.Signals
 
+import GI.Gio.Objects.Cancellable
+
 import GI.WebKit2.Objects.WebView
 
 import qualified Data.Text as T
@@ -22,8 +24,10 @@ callbacks = Callbacks
 
 callback :: (ToJSON i, ToJSON p) => Callbacks -> i -> p -> IO ()
 callback (Callbacks wk) index param =
-    undefined
-    -- webViewRunJavascript wk (T.pack $ callbackScript index param) Nothing Nothing
+    webViewRunJavascript wk
+        (T.pack $ callbackScript index param)
+        (Nothing :: Maybe Cancellable)
+        Nothing
 
 callbackScript :: (ToJSON i, ToJSON p) => i -> p -> String
 callbackScript index param =
