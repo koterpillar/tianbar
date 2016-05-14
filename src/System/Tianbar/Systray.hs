@@ -2,24 +2,28 @@
 -- very well since it is based on eggtraymanager.
 module System.Tianbar.Systray ( systrayNew ) where
 
+import GI.Gdk.Objects.Display
+import GI.Gdk.Objects.Screen
+
 import GI.Gtk
+import GI.Gtk.Enums
 
 import System.Tianbar.Configuration
 
 systrayNew :: IO Widget
 systrayNew = do
-  undefined
-  -- box <- hBoxNew False 5
+    box <- boxNew OrientationHorizontal 5
 
-  -- trayManager <- trayManagerNew
-  -- Just screen <- screenGetDefault
-  -- _ <- trayManagerManageScreen trayManager screen
+    -- trayManager <- trayManagerNew
+    -- disp <- displayGetDefault
+    -- screen <- displayGetScreen disp (fromIntegral myScreen)
+    -- _ <- undefined trayManagerManageScreen trayManager screen
 
-  -- _ <- on trayManager trayIconAdded $ \w -> do
-  --   widgetShowAll w
-  --   boxPackStart box w PackNatural 0
+    -- _ <- on trayManager undefined trayIconAdded $ \w -> do
+    --     widgetShowAll w
+    --     boxPackStart box w False False 0
 
-  -- widgetSetSizeRequest box (-1) barHeight
+    widgetSetSizeRequest box (-1) (fromIntegral barHeight)
 
-  -- widgetShowAll box
-  -- return (toWidget box)
+    widgetShowAll box
+    toWidget box

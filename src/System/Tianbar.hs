@@ -64,8 +64,9 @@ main = do
     wk <- tianbarWebkitNew
     boxPackStart box wk True True 0
 
-    tray <- systrayNew
-    boxPackEnd box tray False False 0
+    -- FIXME: enable when Systray is implemented
+    -- tray <- systrayNew
+    -- boxPackEnd box tray False False 0
 
     widgetShow window
     widgetShow box
