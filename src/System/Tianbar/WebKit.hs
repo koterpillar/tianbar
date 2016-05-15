@@ -4,7 +4,6 @@ module System.Tianbar.WebKit where
 import Control.Concurrent
 import Control.Monad
 
-import qualified Data.ByteString.UTF8 as U
 import qualified Data.Text as T
 import Data.GI.Base
 
@@ -83,7 +82,7 @@ tianbarWebView = do
               err <- gerrorNew errDomain 404 (T.pack "Invalid tianbar: URI")
               uRISchemeRequestFinishError ureq err
           Just resp' -> do
-              stream <- memoryInputStreamNewFromData (U.fromString $ content resp') noDestroyNotify
+              stream <- memoryInputStreamNewFromData (content resp') noDestroyNotify
               uRISchemeRequestFinish ureq stream (-1) (liftM T.pack $ mimeType resp')
 
     -- Handle new window creation

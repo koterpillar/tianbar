@@ -47,7 +47,7 @@ parseURI str = URI segments query
           extractPath uri | prefix `B.isPrefixOf` uri = B.drop (B.length prefix) uri
                           | otherwise = uri
 
-data Response = Response { content :: String
+data Response = Response { content :: B.ByteString
                          , mimeType :: Maybe String
                          }
 
@@ -109,13 +109,13 @@ withData h = do
 
 serveFile :: FilePath -> Handler Response
 serveFile filePath = do
-    contents <- liftIO $ readFile filePath
+    contents <- liftIO $ B.readFile filePath
     let fileType = defaultMimeLookup $ T.pack $ takeFileName filePath
     -- FIXME: Guess the MIME type
     return $ Response contents (Just $ U.toString fileType)
 
 stringResponse :: String -> Handler Response
-stringResponse str = return $ Response str (Just "text/plain")
+stringResponse str = return $ Response (U.fromString str) (Just "text/plain")
 
 class Plugin p where
     initialize :: Callbacks -> IO p
