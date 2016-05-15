@@ -135,9 +135,10 @@ tianbarWebkitNew = do
 
     disp <- displayGetDefault
     screen <- displayGetScreen disp (fromIntegral myScreen)
-    monitorRect <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
-    -- FIXME: size request signal
-    -- _ <- on l sizeRequest $ return (Requisition (sw `div` 2) barHeight)
+    monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
+    monitorW <- rectangleReadWidth monitorSize
+
+    widgetSetSizeRequest l (monitorW `div` 2) (fromIntegral barHeight)
 
     widgetShowAll l
     toWidget l
