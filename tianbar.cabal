@@ -34,6 +34,7 @@ executable tianbar
                      , containers >=0.5
                      , directory >=1.2
                      , dbus >=0.10.10
+                     , filepath
                      , haskell-gi-base >=0.10
                      , http-types
                      , gi-gdk
@@ -41,6 +42,7 @@ executable tianbar
                      , gi-glib
                      , gi-gtk
                      , gi-webkit2
+                     , mime-types
                      , mtl
                      , network >=2.6
                      , process >=1.2

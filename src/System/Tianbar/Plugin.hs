@@ -27,7 +27,10 @@ import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 
+import Network.Mime (defaultMimeLookup)
 import Network.HTTP.Types (Query, decodePath)
+
+import System.FilePath
 
 import System.Tianbar.Callbacks
 
@@ -107,8 +110,9 @@ withData h = do
 serveFile :: FilePath -> Handler Response
 serveFile filePath = do
     contents <- liftIO $ readFile filePath
+    let fileType = defaultMimeLookup $ T.pack $ takeFileName filePath
     -- FIXME: Guess the MIME type
-    return $ Response contents Nothing
+    return $ Response contents (Just $ U.toString fileType)
 
 stringResponse :: String -> Handler Response
 stringResponse str = return $ Response str (Just "text/plain")

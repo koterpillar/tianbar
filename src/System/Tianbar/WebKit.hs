@@ -47,10 +47,10 @@ tianbarWebView :: IO WebView
 tianbarWebView = do
     wk <- webViewNew
 
-    -- Enable AJAX access to all domains
+    -- Debugging settings
     wsettings <- webViewGetSettings wk
-    settingsSetAllowFileAccessFromFileUrls wsettings True
     settingsSetEnableWriteConsoleMessagesToStdout wsettings True
+    settingsSetEnableDeveloperExtras wsettings True
     webViewSetSettings wk wsettings
 
     -- Enable geolocation
@@ -67,7 +67,8 @@ tianbarWebView = do
                 stopServer oldServer
                 startServer (callbacks wk)
 
-    -- Process the special overrides
+    -- All Tianbar plugins are served under tianbar://, allow it for CORS and
+    -- register its handler
     ctx <- webViewGetContext wk
     sec <- webContextGetSecurityManager ctx
     securityManagerRegisterUriSchemeAsCorsEnabled sec "tianbar"
@@ -138,7 +139,7 @@ loadIndexPage wk = do
         exampleHtml <- getDataFileName "index.html"
         copyFile exampleHtml htmlFile
 
-    webViewLoadUri wk $ T.pack $ "file://" ++ htmlFile
+    webViewLoadUri wk $ T.pack $ "tianbar:///user/index.html"
 
 tianbarWebkitNew :: IO Widget
 tianbarWebkitNew = do
