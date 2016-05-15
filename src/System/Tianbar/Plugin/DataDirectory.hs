@@ -2,9 +2,10 @@ module System.Tianbar.Plugin.DataDirectory where
 
 -- Serve files from the data directory
 
-import Control.Monad.IO.Class
+import Control.Monad.Trans
+import Control.Monad.Trans.Reader
 
-import Happstack.Server
+import Network.URI
 
 import System.Tianbar.Plugin
 
@@ -15,6 +16,8 @@ data DataDirectory = DataDirectory
 instance Plugin DataDirectory where
     initialize _ = return DataDirectory
 
-    handler _ = dir "data" $ uriRest $ \filePath -> do
+    handler _ = dir "data" $ do
+        uri <- lift $ ask
+        let filePath = uriPath uri
         dataFile <- liftIO $ getDataFileName filePath
-        serveFile (guessContentTypeM mimeTypes) dataFile
+        serveFile dataFile

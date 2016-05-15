@@ -7,9 +7,8 @@ import Control.Monad
 import Control.Monad.IO.Class
 
 import Data.Aeson (encode)
+import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.Map as M
-
-import Happstack.Server
 
 import DBus.Client
 
@@ -61,22 +60,22 @@ instance Plugin DBusPlugin where
                                        | (busName, bus) <- busNameMap
                                        ]
 
-busHandler :: DBusPlugin -> String -> Bus -> ServerPartT IO Response
+busHandler :: DBusPlugin -> String -> Bus -> Handler Response
 busHandler plugin busName bus = dir busName $ msum [ mzero
                                                    , listenHandler plugin bus
                                                    , stopHandler plugin bus
                                                    , callHandler plugin bus
                                                    ]
 
-listenHandler :: DBusPlugin -> Bus -> ServerPartT IO Response
+listenHandler :: DBusPlugin -> Bus -> Handler Response
 listenHandler plugin bus = dir "listen" $ withData $ \matcher -> do
     nullDir
     index <- look "index"
     listener <- liftIO $ addMatch (busClient bus) matcher $ \sig -> callback (dbusHost plugin) index [sig]
     busAddListener bus index listener
-    return $ toResponse ("ok" :: String)
+    stringResponse "ok"
 
-stopHandler :: DBusPlugin -> Bus -> ServerPartT IO Response
+stopHandler :: DBusPlugin -> Bus -> Handler Response
 stopHandler _ bus = dir "stop" $ do
     nullDir
     index <- look "index"
@@ -84,11 +83,11 @@ stopHandler _ bus = dir "stop" $ do
     case listener of
         Just l -> do
             liftIO $ removeMatch (busClient bus) l
-            return $ toResponse ("ok" :: String)
+            stringResponse "ok"
         Nothing -> mzero
 
-callHandler :: DBusPlugin -> Bus -> ServerPartT IO Response
+callHandler :: DBusPlugin -> Bus -> Handler Response
 callHandler _ bus = dir "call" $ withData $ \mcall -> do
     nullDir
     res <- liftIO $ call (busClient bus) mcall
-    return $ toResponse $ encode res
+    stringResponse $ BS.unpack $ encode res

@@ -3,9 +3,8 @@ module System.Tianbar.WebKit where
 
 import Control.Concurrent
 import Control.Monad
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Maybe
 
+import qualified Data.ByteString.UTF8 as U
 import qualified Data.Text as T
 import Data.GI.Base
 
@@ -15,11 +14,18 @@ import GI.Gdk.Objects.Screen
 import GI.Gdk.Structs.Geometry
 import GI.Gdk.Structs.Rectangle
 
+import GI.Gio.Objects.MemoryInputStream
+
+import GI.GLib.Callbacks
+import GI.GLib.Functions hiding (getUserConfigDir)
+
 import GI.Gtk hiding (main)
 
+import GI.WebKit2.Enums
 import GI.WebKit2.Interfaces.PermissionRequest (permissionRequestAllow)
 import GI.WebKit2.Objects.Settings
-import GI.WebKit2.Objects.URIRequest
+import GI.WebKit2.Objects.URISchemeRequest
+import GI.WebKit2.Objects.WebContext
 import GI.WebKit2.Objects.WebView
 import GI.WebKit2.Objects.WindowProperties
 
@@ -32,15 +38,15 @@ import System.Directory
 import System.Environment.XDG.BaseDir
 
 import System.Tianbar.Callbacks
+import System.Tianbar.Plugin
 import System.Tianbar.Configuration
 import System.Tianbar.Server
-import System.Tianbar.Utils
 
 import Paths_tianbar
 
 tianbarWebView :: IO WebView
 tianbarWebView = do
-    wk <- new WebView []
+    wk <- webViewNew
 
     -- Enable AJAX access to all domains
     wsettings <- webViewGetSettings wk
@@ -55,17 +61,28 @@ tianbarWebView = do
 
     -- Initialize plugins, and re-initialize on reloads
     server <- startServer (callbacks wk) >>= newMVar
-    _ <- on wk LoadChanged $ \_ -> modifyMVar_ server $ \oldServer -> do
-        stopServer oldServer
-        startServer (callbacks wk)
+    _ <- on wk LoadChanged $ \event -> do
+        when (event == LoadEventStarted) $ do
+            modifyMVar_ server $ \oldServer -> do
+                stopServer oldServer
+                startServer (callbacks wk)
 
     -- Process the special overrides
-    _ <- on wk ResourceLoadStarted $ \_ req -> void $ runMaybeT $ do
-        uriStr <- liftM T.unpack $ uRIRequestGetUri req
-        uri <- liftMT $ parseURI uriStr
-        override <- liftIO $ withMVar server $ return . serverOverrideURI
-        let uri' = override uri
-        uRIRequestSetUri req $ T.pack $ show uri'
+    ctx <- webViewGetContext wk
+    webContextRegisterUriScheme ctx "tianbar" $ \ureq -> do
+        uriStr <- liftM T.unpack $ uRISchemeRequestGetUri ureq
+        putStrLn $ "Intercepted URI: " ++ uriStr
+        let (Just uri) = parseURI uriStr
+        response <- withMVar server $ \srv -> handleURI srv uri
+        case response of
+          Nothing -> do
+              putStrLn "URI invalid"
+              errDomain <- quarkFromString (Just $ T.pack "Tianbar")
+              err <- gerrorNew errDomain 404 (T.pack "Invalid tianbar: URI")
+              uRISchemeRequestFinishError ureq err
+          Just resp' -> do
+              stream <- memoryInputStreamNewFromData (U.fromString $ content resp') noDestroyNotify
+              uRISchemeRequestFinish ureq stream (-1) (liftM T.pack $ mimeType resp')
 
     -- Handle new window creation
     _ <- on wk Create $ \_ -> do
@@ -124,16 +141,16 @@ loadIndexPage wk = do
 
 tianbarWebkitNew :: IO Widget
 tianbarWebkitNew = do
-    l <- tianbarWebView
+    wv <- tianbarWebView
 
-    _ <- on l Realize $ loadIndexPage l
+    _ <- on wv Realize $ loadIndexPage wv
 
     disp <- displayGetDefault
     screen <- displayGetScreen disp (fromIntegral myScreen)
     monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
     monitorW <- rectangleReadWidth monitorSize
 
-    widgetSetSizeRequest l (monitorW `div` 2) (fromIntegral barHeight)
+    widgetSetSizeRequest wv (monitorW `div` 2) (fromIntegral barHeight)
 
-    widgetShowAll l
-    toWidget l
+    widgetShowAll wv
+    toWidget wv

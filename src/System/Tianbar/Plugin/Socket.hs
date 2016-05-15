@@ -8,8 +8,6 @@ import Control.Monad.IO.Class
 
 import qualified Data.Map as M
 
-import Happstack.Server
-
 import Network.Socket
 
 import System.Tianbar.Callbacks
@@ -29,7 +27,7 @@ instance Plugin SocketPlugin where
     handler plugin = dir "socket" $ msum $ map (\act -> act plugin) acts
         where acts = [connectHandler, sendHandler, closeHandler]
 
-connectHandler :: SocketPlugin -> ServerPartT IO Response
+connectHandler :: SocketPlugin -> Handler Response
 connectHandler sp = dir "connect" $ do
     nullDir
     callbackIndex <- look "callbackIndex"
@@ -42,9 +40,9 @@ connectHandler sp = dir "connect" $ do
         response <- recv sock 4096
         callback (spHost sp) callbackIndex [response]
     liftIO $ modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
-    return $ toResponse "ok"
+    stringResponse "ok"
 
-sendHandler :: SocketPlugin -> ServerPartT IO Response
+sendHandler :: SocketPlugin -> Handler Response
 sendHandler sp = dir "send" $ do
     nullDir
     callbackIndex <- look "callbackIndex"
@@ -53,9 +51,9 @@ sendHandler sp = dir "send" $ do
     dataToSend <- look "data"
     -- TODO: resend until done
     _ <- liftIO $ send sock dataToSend
-    return $ toResponse "ok"
+    stringResponse "ok"
 
-closeHandler :: SocketPlugin -> ServerPartT IO Response
+closeHandler :: SocketPlugin -> Handler Response
 closeHandler sp = dir "close" $ do
     nullDir
     callbackIndex <- look "callbackIndex"
@@ -65,7 +63,7 @@ closeHandler sp = dir "close" $ do
         Just sock' -> liftIO $ do
             close sock'
             modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
-    return $ toResponse "ok"
+    stringResponse "ok"
 
 withSocket :: MonadIO m => SocketPlugin -> String -> m (Maybe Socket)
 withSocket sp callbackIndex = liftIO $ withMVar (spSock sp) $ return . M.lookup callbackIndex

@@ -9,7 +9,7 @@ import Data.Maybe
 import DBus
 import DBus.Client
 
-import Happstack.Server
+import System.Tianbar.Plugin
 
 instance FromData MatchRule where
     fromData = do

@@ -35,12 +35,12 @@ executable tianbar
                      , directory >=1.2
                      , dbus >=0.10.10
                      , haskell-gi-base >=0.10
-                     , happstack-server >= 7.3
                      , gi-gdk
                      , gi-gio
                      , gi-glib
                      , gi-gtk
                      , gi-webkit2
+                     , mtl
                      , network >=2.6
                      , network-uri >=2.6
                      , process >=1.2
@@ -48,6 +48,7 @@ executable tianbar
                      , split >=0.2
                      , text >=0.11
                      , transformers >=0.3
+                     , utf8-string
                      , xdg-basedir >=0.2
   pkgconfig-depends:   gtk+-3.0
   hs-source-dirs:      src
@@ -66,7 +67,6 @@ executable tianbar
                      , System.Tianbar.Plugin.DBus.JSON
                      , System.Tianbar.Plugin.GSettings
                      , System.Tianbar.Plugin.Socket
-                     , System.Tianbar.Utils
                      , System.Tianbar.WebKit
                      , GI.Extras
                      , GI.Signals

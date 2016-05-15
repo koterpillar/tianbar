@@ -4,8 +4,6 @@ module System.Tianbar.Plugin.GSettings where
 
 import Control.Monad.IO.Class
 
-import Happstack.Server
-
 import System.Process
 
 import System.Tianbar.Plugin
@@ -20,11 +18,10 @@ instance Plugin GSettings where
         path $ \key -> do
             nullDir
             setting <- liftIO $ gsettingsGet schema key
-            return $ toResponse setting
+            stringResponse setting
 
 gsettingsGet :: String -> String -> IO String
 gsettingsGet schema key = do
     output <- readProcess "gsettings" ["get", schema, key] []
     let len = length output
     return $ drop 1 $ take (len - 2) output
-
