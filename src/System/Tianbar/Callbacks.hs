@@ -7,8 +7,6 @@ module System.Tianbar.Callbacks (
 
 import Data.Aeson
 
-import GI.Signals
-
 import GI.Gio.Objects.Cancellable
 
 import GI.WebKit2.Objects.WebView
@@ -26,7 +24,7 @@ callback :: (ToJSON i, ToJSON p) => Callbacks -> i -> p -> IO ()
 callback (Callbacks wk) index param =
     webViewRunJavascript wk
         (T.pack $ callbackScript index param)
-        (Nothing :: Maybe Cancellable)
+        noCancellable
         Nothing
 
 callbackScript :: (ToJSON i, ToJSON p) => i -> p -> String

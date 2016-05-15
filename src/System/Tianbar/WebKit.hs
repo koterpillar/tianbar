@@ -107,7 +107,7 @@ tianbarWebView = do
             geometryWriteMaxWidth geomHint ww
             geometryWriteMaxHeight geomHint wh
             windowSetGeometryHints window
-                (Nothing :: Maybe Widget)
+                noWidget
                 (Just geomHint)
                 [WindowHintsMinSize, WindowHintsMaxSize]
 
