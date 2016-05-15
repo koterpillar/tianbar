@@ -9,8 +9,10 @@ import Control.Monad.Trans.Maybe
 import qualified Data.Text as T
 import Data.GI.Base
 
+import GI.Gdk.Flags
 import GI.Gdk.Objects.Display
 import GI.Gdk.Objects.Screen
+import GI.Gdk.Structs.Geometry
 import GI.Gdk.Structs.Rectangle
 
 import qualified GI.GLib as GLib
@@ -24,6 +26,7 @@ import GI.WebKit2.Objects.WebResource
 import GI.WebKit2.Objects.WebView
 import GI.WebKit2.Objects.WindowProperties
 
+import GI.Extras
 import GI.Signals
 
 import Network.URI
@@ -86,8 +89,15 @@ tianbarWebView = do
                                                , rectangleReadHeight
                                                ]
 
-            -- FIXME: How do I get a non-null Geometry?
-            -- windowSetGeometryHints window (Just newgeom) []
+            geomHint <- newZeroGeometry
+            geometryWriteMinWidth geomHint ww
+            geometryWriteMinHeight geomHint wh
+            geometryWriteMaxWidth geomHint ww
+            geometryWriteMaxHeight geomHint wh
+            windowSetGeometryHints window
+                (Nothing :: Maybe Widget)
+                (Just geomHint)
+                [WindowHintsMinSize, WindowHintsMaxSize]
 
             widgetShow window
             widgetShow nwk
