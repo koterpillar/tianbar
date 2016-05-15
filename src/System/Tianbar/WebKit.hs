@@ -15,10 +15,7 @@ import GI.Gdk.Objects.Screen
 import GI.Gdk.Structs.Geometry
 import GI.Gdk.Structs.Rectangle
 
-import qualified GI.GLib as GLib
-
 import GI.Gtk hiding (main)
-import GI.Gtk.Objects.Widget
 
 import GI.WebKit2.Interfaces.PermissionRequest (permissionRequestAllow)
 import GI.WebKit2.Objects.Settings
