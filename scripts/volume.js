@@ -16,7 +16,7 @@ define(['jquery', './socket'], function ($, socket) {
   var WAVES = 5;
 
   function uid() {
-    return $.ajax('/proc/self/status')
+    return $.ajax('tianbar:///root/proc/self/status')
     .then(function (result) {
       return +UID_RE.exec(result)[1];
     });

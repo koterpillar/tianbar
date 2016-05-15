@@ -1,4 +1,4 @@
-module System.Tianbar.Plugin.DataDirectory where
+module System.Tianbar.Plugin.FileSystem where
 
 -- Serve files from the data directory
 
@@ -16,16 +16,20 @@ import System.Tianbar.Configuration
 
 import Paths_tianbar
 
-data DataDirectory = DataDirectory
+data FileSystem = FileSystem
 
 getUserFileName :: String -> IO FilePath
 getUserFileName = getUserConfigFile appName
 
-instance Plugin DataDirectory where
-    initialize _ = return DataDirectory
+getRootFileName :: String -> IO FilePath
+getRootFileName path = return $ "/" ++ path
+
+instance Plugin FileSystem where
+    initialize _ = return FileSystem
 
     handler _ = msum [ dir "data" $ directoryHandler getDataFileName
                      , dir "user" $ directoryHandler getUserFileName
+                     , dir "root" $ directoryHandler getRootFileName
                      ]
 
 directoryHandler :: (String -> IO FilePath) -> Handler Response

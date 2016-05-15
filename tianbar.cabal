@@ -63,7 +63,7 @@ executable tianbar
                      , System.Tianbar.Systray
                      , System.Tianbar.Plugin
                      , System.Tianbar.Plugin.Combined
-                     , System.Tianbar.Plugin.DataDirectory
+                     , System.Tianbar.Plugin.FileSystem
                      , System.Tianbar.Plugin.DBus
                      , System.Tianbar.Plugin.DBus.FromData
                      , System.Tianbar.Plugin.DBus.JSON

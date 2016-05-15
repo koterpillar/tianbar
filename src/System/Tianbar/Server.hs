@@ -8,8 +8,8 @@ module System.Tianbar.Server (
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 import System.Tianbar.Plugin.Combined
-import System.Tianbar.Plugin.DataDirectory
 import System.Tianbar.Plugin.DBus
+import System.Tianbar.Plugin.FileSystem
 import System.Tianbar.Plugin.GSettings
 import System.Tianbar.Plugin.Socket
 
@@ -23,8 +23,8 @@ startServer c = do
     return $ Server (runPlugin plugins) (destroy plugins)
 
 type AllPlugins =
-    Combined DataDirectory (
-        Combined DBusPlugin (
+    Combined DBusPlugin (
+        Combined FileSystem (
             Combined GSettings (
                 Combined SocketPlugin (
                     Combined Empty Empty))))
