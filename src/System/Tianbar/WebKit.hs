@@ -22,7 +22,7 @@ import GI.Gtk.Objects.Widget
 
 import GI.WebKit2.Interfaces.PermissionRequest (permissionRequestAllow)
 import GI.WebKit2.Objects.Settings
-import GI.WebKit2.Objects.WebResource
+import GI.WebKit2.Objects.URIRequest
 import GI.WebKit2.Objects.WebView
 import GI.WebKit2.Objects.WindowProperties
 
@@ -63,14 +63,12 @@ tianbarWebView = do
         startServer (callbacks wk)
 
     -- Process the special overrides
-    -- FIXME: enable
-    -- _ <- on wk ResourceLoadStarted $ \_ _ nreq _ -> void $ runMaybeT $ do
-    --     req <- liftMT nreq
-    --     uriStr <- MaybeT $ webResourceGetUri req
-    --     uri <- liftMT $ parseURI uriStr
-    --     override <- liftIO $ withMVar server $ return . serverOverrideURI
-    --     let uri' = override uri
-    --     liftIO $ networkRequestSetUri req $ show uri'
+    _ <- on wk ResourceLoadStarted $ \_ req -> void $ runMaybeT $ do
+        uriStr <- liftM T.unpack $ uRIRequestGetUri req
+        uri <- liftMT $ parseURI uriStr
+        override <- liftIO $ withMVar server $ return . serverOverrideURI
+        let uri' = override uri
+        uRIRequestSetUri req $ T.pack $ show uri'
 
     -- Handle new window creation
     _ <- on wk Create $ \_ -> do
