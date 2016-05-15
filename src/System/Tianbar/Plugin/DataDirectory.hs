@@ -5,7 +5,8 @@ module System.Tianbar.Plugin.DataDirectory where
 import Control.Monad.Trans
 import Control.Monad.Trans.Reader
 
-import Network.URI
+import qualified Data.List as L
+import qualified Data.Text as T
 
 import System.Tianbar.Plugin
 
@@ -18,6 +19,6 @@ instance Plugin DataDirectory where
 
     handler _ = dir "data" $ do
         uri <- lift $ ask
-        let filePath = uriPath uri
+        let filePath = L.intercalate "/" $ map T.unpack $ uriPathSegments uri
         dataFile <- liftIO $ getDataFileName filePath
         serveFile dataFile

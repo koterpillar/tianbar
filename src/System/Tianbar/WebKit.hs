@@ -23,6 +23,7 @@ import GI.Gtk hiding (main)
 
 import GI.WebKit2.Enums
 import GI.WebKit2.Interfaces.PermissionRequest (permissionRequestAllow)
+import GI.WebKit2.Objects.SecurityManager
 import GI.WebKit2.Objects.Settings
 import GI.WebKit2.Objects.URISchemeRequest
 import GI.WebKit2.Objects.WebContext
@@ -31,8 +32,6 @@ import GI.WebKit2.Objects.WindowProperties
 
 import GI.Extras
 import GI.Signals
-
-import Network.URI
 
 import System.Directory
 import System.Environment.XDG.BaseDir
@@ -51,6 +50,7 @@ tianbarWebView = do
     -- Enable AJAX access to all domains
     wsettings <- webViewGetSettings wk
     settingsSetAllowFileAccessFromFileUrls wsettings True
+    settingsSetEnableWriteConsoleMessagesToStdout wsettings True
     webViewSetSettings wk wsettings
 
     -- Enable geolocation
@@ -69,14 +69,15 @@ tianbarWebView = do
 
     -- Process the special overrides
     ctx <- webViewGetContext wk
+    sec <- webContextGetSecurityManager ctx
+    securityManagerRegisterUriSchemeAsCorsEnabled sec "tianbar"
     webContextRegisterUriScheme ctx "tianbar" $ \ureq -> do
-        uriStr <- liftM T.unpack $ uRISchemeRequestGetUri ureq
-        putStrLn $ "Intercepted URI: " ++ uriStr
-        let (Just uri) = parseURI uriStr
+        uriStr <- uRISchemeRequestGetUri ureq
+        let uri = parseURI uriStr
         response <- withMVar server $ \srv -> handleURI srv uri
         case response of
           Nothing -> do
-              putStrLn "URI invalid"
+              putStrLn $ "URI invalid: " ++ T.unpack uriStr
               errDomain <- quarkFromString (Just $ T.pack "Tianbar")
               err <- gerrorNew errDomain 404 (T.pack "Invalid tianbar: URI")
               uRISchemeRequestFinishError ureq err

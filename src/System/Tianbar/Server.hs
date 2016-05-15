@@ -5,8 +5,6 @@ module System.Tianbar.Server (
 
 -- Server to handle JS callbacks
 
-import Network.URI
-
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 import System.Tianbar.Plugin.Combined

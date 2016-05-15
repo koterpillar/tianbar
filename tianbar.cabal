@@ -35,6 +35,7 @@ executable tianbar
                      , directory >=1.2
                      , dbus >=0.10.10
                      , haskell-gi-base >=0.10
+                     , http-types
                      , gi-gdk
                      , gi-gio
                      , gi-glib
@@ -42,7 +43,6 @@ executable tianbar
                      , gi-webkit2
                      , mtl
                      , network >=2.6
-                     , network-uri >=2.6
                      , process >=1.2
                      , random >=1.0
                      , split >=0.2
