@@ -2,21 +2,20 @@ flags: {}
 packages:
 - '.'
 extra-deps:
-- gi-atk-0.2.18.13
-- gi-cairo-0.1.14.13
-- gi-gdk-0.3.18.13
-- gi-gdkpixbuf-0.2.32.13
-- gi-gio-0.2.46.13
-- gi-glib-0.2.46.13
-- gi-gobject-0.2.46.13
-- gi-gtk-0.3.18.13
-- gi-javascriptcore-0.2.10.13
-- gi-pango-0.1.38.13
-- gi-soup-0.2.52.13
-- gi-webkit2-0.2.10.13
-- gtk-traymanager-0.1.5
-- haskell-gi-0.13
-- haskell-gi-base-0.13
+- gi-atk-0.2.18.14
+- gi-cairo-0.1.14.14
+- gi-gdk-0.3.18.14
+- gi-gdkpixbuf-0.2.32.14
+- gi-gio-0.2.46.14
+- gi-glib-0.2.46.14
+- gi-gobject-0.2.46.14
+- gi-gtk-0.3.18.14
+- gi-javascriptcore-0.2.12.14
+- gi-pango-0.1.38.14
+- gi-soup-0.2.52.14
+- gi-webkit2-0.2.12.14
+- haskell-gi-0.14
+- haskell-gi-base-0.14
 - X11-xft-0.3.1
 - xdg-basedir-0.2.2
 - xmonad-0.11.1
