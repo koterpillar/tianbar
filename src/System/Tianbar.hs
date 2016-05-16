@@ -41,7 +41,7 @@ main = do
     args <- getArgs
     _ <- GtkFunctions.init $ Just $ map T.pack $ (progName : args)
 
-    disp <- displayGetDefault
+    Just disp <- displayGetDefault
     screen <- displayGetScreen disp (fromIntegral myScreen)
     monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
 

@@ -29,7 +29,6 @@ import GI.WebKit2.Objects.WebContext
 import GI.WebKit2.Objects.WebView
 import GI.WebKit2.Objects.WindowProperties
 
-import GI.Extras
 import GI.Signals
 
 import System.Directory
@@ -94,7 +93,7 @@ tianbarWebView = do
 
         _ <- on nwk ReadyToShow $ do
             wprop <- webViewGetWindowProperties nwk
-            wgeom <- getWindowPropertiesGeometry wprop
+            Just wgeom <- getWindowPropertiesGeometry wprop
 
             [wx, wy, ww, wh] <- mapM ($ wgeom) [ rectangleReadX
                                                , rectangleReadY
@@ -146,7 +145,7 @@ tianbarWebkitNew = do
 
     _ <- on wv Realize $ loadIndexPage wv
 
-    disp <- displayGetDefault
+    Just disp <- displayGetDefault
     screen <- displayGetScreen disp (fromIntegral myScreen)
     monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
     monitorW <- rectangleReadWidth monitorSize
