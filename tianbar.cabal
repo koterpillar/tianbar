@@ -70,7 +70,6 @@ executable tianbar
                      , System.Tianbar.Plugin.GSettings
                      , System.Tianbar.Plugin.Socket
                      , System.Tianbar.WebKit
-                     , GI.Signals
   c-sources:           src/gdk_property_change_wrapper.c
   ghc-options:         -Wall -rtsopts -threaded
 

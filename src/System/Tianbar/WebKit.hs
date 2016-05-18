@@ -29,8 +29,6 @@ import GI.WebKit2.Objects.WebContext
 import GI.WebKit2.Objects.WebView
 import GI.WebKit2.Objects.WindowProperties
 
-import GI.Signals
-
 import System.Directory
 import System.Environment.XDG.BaseDir
 
@@ -52,14 +50,14 @@ tianbarWebView = do
     webViewSetSettings wk wsettings
 
     -- Enable geolocation
-    _ <- on wk PermissionRequest $ \request -> do
+    _ <- onWebViewPermissionRequest wk $ \request -> do
         -- TODO: This should only match geolocation permission requests
         permissionRequestAllow request
         return True
 
     -- Initialize plugins, and re-initialize on reloads
     server <- startServer (callbacks wk) >>= newMVar
-    _ <- on wk LoadChanged $ \event -> do
+    _ <- onWebViewLoadChanged wk $ \event -> do
         when (event == LoadEventStarted) $ do
             modifyMVar_ server $ \oldServer -> do
                 stopServer oldServer
@@ -85,13 +83,13 @@ tianbarWebView = do
               uRISchemeRequestFinish ureq stream (-1) (liftM T.pack $ mimeType resp')
 
     -- Handle new window creation
-    _ <- on wk Create $ \_ -> do
+    _ <- onWebViewCreate wk $ \_ -> do
         nwk <- tianbarWebView
 
         window <- windowNew WindowTypePopup
         containerAdd window nwk
 
-        _ <- on nwk ReadyToShow $ do
+        _ <- onWebViewReadyToShow nwk $ do
             wprop <- webViewGetWindowProperties nwk
             Just wgeom <- getWindowPropertiesGeometry wprop
 
@@ -143,7 +141,7 @@ tianbarWebkitNew :: IO Widget
 tianbarWebkitNew = do
     wv <- tianbarWebView
 
-    _ <- on wv Realize $ loadIndexPage wv
+    _ <- onWidgetRealize wv $ loadIndexPage wv
 
     Just disp <- displayGetDefault
     screen <- displayGetScreen disp (fromIntegral myScreen)

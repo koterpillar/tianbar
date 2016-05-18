@@ -16,8 +16,6 @@ import GI.Gtk.Objects.Container
 import GI.Gtk.Objects.Widget
 import GI.Gtk.Objects.Window
 
-import GI.Signals
-
 import System.Environment (getArgs, getProgName)
 
 import System.Tianbar.Configuration
@@ -55,7 +53,7 @@ main = do
     windowSetDefaultSize window (fromIntegral monitorW) (fromIntegral barHeight)
     strut <- topStrut monitorSize
     windowMove window monitorX 0
-    _ <- on window Realize $
+    _ <- onWidgetRealize window $
         setStrutProperties window strut
 
     box <- boxNew OrientationHorizontal $ fromIntegral widgetSpacing
