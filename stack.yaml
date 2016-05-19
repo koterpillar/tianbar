@@ -1,6 +1,10 @@
 flags: {}
 packages:
 - '.'
+- location:
+    git: 'git@github.com:koterpillar/gtk-traymanager'
+    commit: 7875415bbd0dc161ac9faf13ef89323b09eb022e
+  extra-dep: true
 extra-deps:
 - gi-atk-0.2.18.14
 - gi-cairo-0.1.14.14

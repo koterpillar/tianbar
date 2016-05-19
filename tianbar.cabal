@@ -37,6 +37,7 @@ executable tianbar
                      , filepath
                      , haskell-gi-base >=0.10
                      , http-types
+                     , gtk-traymanager
                      , gi-gdk
                      , gi-gio
                      , gi-glib
