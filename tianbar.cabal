@@ -29,13 +29,13 @@ data-files:          README.md
 executable tianbar
   default-language:    Haskell2010
   build-depends:       base >3 && <5
-                     , aeson >=0.6
-                     , bytestring >= 0.10
-                     , containers >=0.5
-                     , directory >=1.2
-                     , dbus >=0.10.10
+                     , aeson
+                     , bytestring
+                     , containers
+                     , directory
+                     , dbus
                      , filepath
-                     , haskell-gi-base >=0.10
+                     , haskell-gi-base
                      , http-types
                      , gtk-traymanager
                      , gi-gdk
@@ -45,14 +45,14 @@ executable tianbar
                      , gi-webkit2
                      , mime-types
                      , mtl
-                     , network >=2.6
-                     , process >=1.2
-                     , random >=1.0
-                     , split >=0.2
-                     , text >=0.11
-                     , transformers >=0.3
+                     , network
+                     , process
+                     , random
+                     , split
+                     , text
+                     , transformers
                      , utf8-string
-                     , xdg-basedir >=0.2
+                     , xdg-basedir
   pkgconfig-depends:   gtk+-3.0
   hs-source-dirs:      src
   main-is:             Main.hs
@@ -80,9 +80,9 @@ library
                      , dbus
                      , xmonad
                      , xmonad-contrib
-                     , utf8-string >=0.3
-                     , blaze-html >=0.5
-                     , blaze-markup >=0.5
+                     , utf8-string
+                     , blaze-html
+                     , blaze-markup
   hs-source-dirs:      src
   exposed-modules:     System.Tianbar.XMonadLog
   ghc-options:         -Wall -rtsopts
