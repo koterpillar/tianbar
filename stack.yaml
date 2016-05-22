@@ -24,4 +24,4 @@ extra-deps:
 - xdg-basedir-0.2.2
 - xmonad-0.11.1
 - xmonad-contrib-0.11.4
-resolver: lts-5.13
+resolver: lts-5.17
