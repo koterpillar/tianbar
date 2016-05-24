@@ -2,8 +2,6 @@ module System.Tianbar where
 
 import qualified Data.Text as T
 
-import Data.GI.Base
-
 import GI.Gdk.Enums hiding (WindowTypeToplevel)
 import GI.Gdk.Objects.Display
 import GI.Gdk.Objects.Screen
