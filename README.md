@@ -22,6 +22,10 @@ with Tianbar.
 For an example of RequireJS configuration, see the
 [example index.html](index.html).
 
+### IBus
+
+Displays the status of IBus input method.
+
 ### Power
 
 Displays the battery status for all the batteries reporting through UPower.

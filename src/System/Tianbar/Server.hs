@@ -9,6 +9,7 @@ import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 import System.Tianbar.Plugin.Combined
 import System.Tianbar.Plugin.DBus
+import System.Tianbar.Plugin.ExecuteCommand
 import System.Tianbar.Plugin.FileSystem
 import System.Tianbar.Plugin.GSettings
 import System.Tianbar.Plugin.Socket
@@ -24,7 +25,8 @@ startServer c = do
 
 type AllPlugins =
     Combined DBusPlugin (
-        Combined FileSystem (
-            Combined GSettings (
-                Combined SocketPlugin (
-                    Combined Empty Empty))))
+        Combined ExecuteCommand (
+            Combined FileSystem (
+                Combined GSettings (
+                    Combined SocketPlugin (
+                        Combined Empty Empty)))))
