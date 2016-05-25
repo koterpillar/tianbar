@@ -76,6 +76,26 @@ define(['jquery', './tianbar'], function ($, tianbar) {
     };
   }
 
+  /**
+   * Connect to an arbitrary bus.
+   * @param address {String} Bus address
+   * 'destination', 'body')
+   * @return {Deferred} A promise to be fulfilled with the bus object
+   */
+  function connectBus(address) {
+    // random name
+    var name = new Date().getTime();
+
+    return $.ajax('tianbar:///dbus/connect', {
+      data: {
+        name: name,
+        address: address
+      }
+    }).then(function () {
+      return bus(name);
+    });
+  }
+
   return {
     /**
      * Session bus.
@@ -84,6 +104,10 @@ define(['jquery', './tianbar'], function ($, tianbar) {
     /**
      * System bus.
      */
-    system: bus('system')
+    system: bus('system'),
+    /**
+     * Connect an arbitrary bus.
+     */
+    connect: connectBus
   };
 });

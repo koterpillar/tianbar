@@ -5,17 +5,31 @@ module System.Tianbar.Plugin.DBus (DBusPlugin) where
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Maybe
 
 import Data.Aeson (encode)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.Map as M
 
-import DBus.Client
+import DBus (parseAddress)
+import DBus.Client ( Client
+                   , SignalHandler
+                   , addMatch
+                   , call
+                   , connect
+                   , connectSystem
+                   , connectSession
+                   , disconnect
+                   , removeMatch
+                   )
 
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 import System.Tianbar.Plugin.DBus.JSON ()
 import System.Tianbar.Plugin.DBus.FromData ()
+
+insertMVar :: Ord k => MonadIO m => k -> v -> MVar (M.Map k v) -> m ()
+insertMVar k v m = liftIO $ modifyMVar_ m $ return . M.insert k v
 
 data Bus = Bus { busClient :: Client
                , busSignals :: MVar (M.Map String SignalHandler)
@@ -29,8 +43,7 @@ busDestroy :: Bus -> IO ()
 busDestroy = disconnect . busClient
 
 busAddListener :: (MonadIO m) => Bus -> String -> SignalHandler -> m ()
-busAddListener bus index listener = liftIO $ modifyMVar_ (busSignals bus) $ \listeners ->
-    return $ M.insert index listener listeners
+busAddListener bus index listener = insertMVar index listener (busSignals bus)
 
 busPopListener :: (MonadIO m) => Bus -> String -> m (Maybe SignalHandler)
 busPopListener bus index = liftIO $ modifyMVar (busSignals bus) $ \listeners -> do
@@ -39,33 +52,46 @@ busPopListener bus index = liftIO $ modifyMVar (busSignals bus) $ \listeners -> 
     return (listeners', listener)
 
 data DBusPlugin = DBusPlugin { dbusHost :: Callbacks
-                             , dbusSession :: Bus
-                             , dbusSystem :: Bus
+                             , dbusMap :: MVar (M.Map String Bus)
                              }
-
-busNameMap :: [(String, DBusPlugin -> Bus)]
-busNameMap = [ ("session", dbusSession)
-             , ("system", dbusSystem)
-             ]
 
 instance Plugin DBusPlugin where
     initialize c = do
+        busMap <- newMVar M.empty
         session <- busNew connectSession
+        insertMVar "session" session busMap
         system <- busNew connectSystem
-        return $ DBusPlugin c session system
+        insertMVar "system" system busMap
+        return $ DBusPlugin c busMap
 
-    destroy plugin = mapM_ busDestroy [dbusSession plugin, dbusSystem plugin]
+    destroy plugin = withMVar (dbusMap plugin) $ \m -> forM_ m $ busDestroy
 
-    handler plugin = dir "dbus" $ msum [ busHandler plugin busName (bus plugin)
-                                       | (busName, bus) <- busNameMap
+    handler plugin = dir "dbus" $ msum [ busesHandler plugin
+                                       , connectBusHandler plugin
                                        ]
 
-busHandler :: DBusPlugin -> String -> Bus -> Handler Response
-busHandler plugin busName bus = dir busName $ msum [ mzero
-                                                   , listenHandler plugin bus
-                                                   , stopHandler plugin bus
-                                                   , callHandler plugin bus
-                                                   ]
+busesHandler :: DBusPlugin -> Handler Response
+busesHandler plugin = path $ \busName -> do
+    bus <- liftIO $ withMVar (dbusMap plugin) $ return . M.lookup busName
+    case bus of
+        Just bus' -> busHandler plugin bus'
+        Nothing -> mzero
+
+connectBusHandler :: DBusPlugin -> Handler Response
+connectBusHandler plugin = dir "connect" $ do
+    nullDir
+    name <- look "name"
+    addressStr <- look "address"
+    address <- MaybeT $ return $ parseAddress addressStr
+    bus <- liftIO $ busNew $ connect address
+    insertMVar name bus (dbusMap plugin)
+    stringResponse "ok"
+
+busHandler :: DBusPlugin -> Bus -> Handler Response
+busHandler plugin bus = msum [ listenHandler plugin bus
+                             , stopHandler plugin bus
+                             , callHandler plugin bus
+                             ]
 
 listenHandler :: DBusPlugin -> Bus -> Handler Response
 listenHandler plugin bus = dir "listen" $ withData $ \matcher -> do
