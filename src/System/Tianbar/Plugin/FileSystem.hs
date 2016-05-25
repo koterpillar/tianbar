@@ -22,7 +22,7 @@ getUserFileName :: String -> IO FilePath
 getUserFileName = getUserConfigFile appName
 
 getRootFileName :: String -> IO FilePath
-getRootFileName path = return $ "/" ++ path
+getRootFileName filePath = return $ "/" ++ filePath
 
 instance Plugin FileSystem where
     initialize _ = return FileSystem

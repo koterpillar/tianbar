@@ -61,15 +61,6 @@ withUri newUri h = do
     res <- liftIO $ runHandler h newUri
     MaybeT $ return res
 
-dir :: String -> Handler t -> Handler t
-dir name h = do
-    uri <- lift ask
-    let segments = uriPathSegments uri
-    guard $ not $ null segments
-    guard $ (T.unpack $ head segments) == name
-    let uri' = uri { uriPathSegments = tail segments }
-    withUri uri' h
-
 path :: (String -> Handler t) -> Handler t
 path h = do
     uri <- lift ask
@@ -78,6 +69,9 @@ path h = do
 
     let uri' = uri { uriPathSegments = tail segments }
     withUri uri' $ h (T.unpack $ head segments)
+
+dir :: String -> Handler t -> Handler t
+dir name h = path $ \name' -> guard (name == name') >> h
 
 nullDir :: Handler ()
 nullDir = do
