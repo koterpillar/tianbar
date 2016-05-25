@@ -1,9 +1,5 @@
 packages:
 - '.'
-- location:
-    git: 'git@github.com:koterpillar/gtk-traymanager'
-    commit: 7875415bbd0dc161ac9faf13ef89323b09eb022e
-  extra-dep: true
 extra-deps:
 - X11-xft-0.3.1
 - gi-javascriptcore-4.0.3

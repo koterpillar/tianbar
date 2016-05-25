@@ -17,7 +17,6 @@ import GI.Gtk.Objects.Window
 import System.Environment (getArgs, getProgName)
 
 import System.Tianbar.Configuration
-import System.Tianbar.Systray
 import System.Tianbar.StrutProperties
 import System.Tianbar.WebKit
 
@@ -59,10 +58,6 @@ main = do
 
     wk <- tianbarWebkitNew
     boxPackStart box wk True True 0
-
-    -- FIXME: enable when Systray is implemented
-    tray <- systrayNew
-    boxPackEnd box tray False False 0
 
     widgetShow window
     widgetShow box
