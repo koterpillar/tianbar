@@ -4,6 +4,7 @@ module System.Tianbar.Plugin (
     Response (..),
     FromData (..),
     URI (..),
+    bytestringResponse,
     dir,
     look,
     looks,
@@ -13,6 +14,7 @@ module System.Tianbar.Plugin (
     runPlugin,
     serveFile,
     stringResponse,
+    textResponse,
     withData,
 ) where
 
@@ -109,7 +111,13 @@ serveFile filePath = do
     return $ Response contents (Just $ U.toString fileType)
 
 stringResponse :: String -> Handler Response
-stringResponse str = return $ Response (U.fromString str) (Just "text/plain")
+stringResponse = bytestringResponse . U.fromString
+
+textResponse :: T.Text -> Handler Response
+textResponse = bytestringResponse . TE.encodeUtf8
+
+bytestringResponse :: B.ByteString -> Handler Response
+bytestringResponse str = return $ Response str (Just "text/plain")
 
 class Plugin p where
     initialize :: Callbacks -> IO p

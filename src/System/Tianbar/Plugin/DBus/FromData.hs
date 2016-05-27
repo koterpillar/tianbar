@@ -50,4 +50,4 @@ instance FromData BusName where
 variantFromString :: String -> Variant
 variantFromString param = case splitOn ":" param of
     ["string", str] -> toVariant str
-    _ -> error "Invalid variant string"
+    _ -> error $ "Invalid variant string: " ++ show param

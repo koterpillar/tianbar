@@ -5,6 +5,7 @@ module System.Tianbar.Plugin.DBus.JSON () where
 import Data.Aeson hiding (Array)
 import Data.Int
 import qualified Data.Map as M
+import qualified Data.Text as T
 import Data.Word
 
 import DBus
@@ -20,7 +21,7 @@ instance ToJSON Variant where
         TypeInt32 -> let Just i = fromVariant v :: Maybe Int32 in toJSON i
         TypeInt64 -> let Just i = fromVariant v :: Maybe Int64 in toJSON i
         TypeDouble -> let Just i = fromVariant v :: Maybe Double in toJSON i
-        TypeString -> let Just s = fromVariant v :: Maybe String in toJSON s
+        TypeString -> let Just s = fromVariant v :: Maybe T.Text in toJSON s
 
         TypeSignature -> let Just s = fromVariant v :: Maybe Signature in
             toJSON $ formatSignature s

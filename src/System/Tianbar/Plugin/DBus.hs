@@ -8,8 +8,9 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
 
 import Data.Aeson (encode)
-import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.Map as M
+import qualified Data.Text as T
 
 import DBus (parseAddress)
 import DBus.Client ( Client
@@ -116,4 +117,4 @@ callHandler :: DBusPlugin -> Bus -> Handler Response
 callHandler _ bus = dir "call" $ withData $ \mcall -> do
     nullDir
     res <- liftIO $ call (busClient bus) mcall
-    stringResponse $ BS.unpack $ encode res
+    bytestringResponse $ LBS.toStrict $ encode res
