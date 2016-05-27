@@ -10,7 +10,6 @@ import Control.Monad.Trans.Maybe
 import Data.Aeson (encode)
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.Map as M
-import qualified Data.Text as T
 
 import DBus (parseAddress)
 import DBus.Client ( Client
@@ -86,7 +85,7 @@ connectBusHandler plugin = dir "connect" $ do
     address <- MaybeT $ return $ parseAddress addressStr
     bus <- liftIO $ busNew $ connect address
     insertMVar name bus (dbusMap plugin)
-    stringResponse "ok"
+    okResponse
 
 busHandler :: DBusPlugin -> Bus -> Handler Response
 busHandler plugin bus = msum [ listenHandler plugin bus
@@ -100,7 +99,7 @@ listenHandler plugin bus = dir "listen" $ withData $ \matcher -> do
     index <- look "index"
     listener <- liftIO $ addMatch (busClient bus) matcher $ \sig -> callback (dbusHost plugin) index [sig]
     busAddListener bus index listener
-    stringResponse "ok"
+    okResponse
 
 stopHandler :: DBusPlugin -> Bus -> Handler Response
 stopHandler _ bus = dir "stop" $ do
@@ -110,7 +109,7 @@ stopHandler _ bus = dir "stop" $ do
     case listener of
         Just l -> do
             liftIO $ removeMatch (busClient bus) l
-            stringResponse "ok"
+            okResponse
         Nothing -> mzero
 
 callHandler :: DBusPlugin -> Bus -> Handler Response

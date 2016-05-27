@@ -40,7 +40,7 @@ connectHandler sp = dir "connect" $ do
         response <- recv sock 4096
         callback (spHost sp) callbackIndex [response]
     liftIO $ modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
-    stringResponse "ok"
+    okResponse
 
 sendHandler :: SocketPlugin -> Handler Response
 sendHandler sp = dir "send" $ do
@@ -51,7 +51,7 @@ sendHandler sp = dir "send" $ do
     dataToSend <- look "data"
     -- TODO: resend until done
     _ <- liftIO $ send sock dataToSend
-    stringResponse "ok"
+    okResponse
 
 closeHandler :: SocketPlugin -> Handler Response
 closeHandler sp = dir "close" $ do
@@ -63,7 +63,7 @@ closeHandler sp = dir "close" $ do
         Just sock' -> liftIO $ do
             close sock'
             modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
-    stringResponse "ok"
+    okResponse
 
 withSocket :: MonadIO m => SocketPlugin -> String -> m (Maybe Socket)
 withSocket sp callbackIndex = liftIO $ withMVar (spSock sp) $ return . M.lookup callbackIndex

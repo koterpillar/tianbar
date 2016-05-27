@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module System.Tianbar.Plugin (
     Handler,
     Plugin (..),
@@ -9,6 +10,7 @@ module System.Tianbar.Plugin (
     look,
     looks,
     nullDir,
+    okResponse,
     parseURI,
     path,
     runPlugin,
@@ -118,6 +120,9 @@ textResponse = bytestringResponse . TE.encodeUtf8
 
 bytestringResponse :: B.ByteString -> Handler Response
 bytestringResponse str = return $ Response str (Just "text/plain")
+
+okResponse :: Handler Response
+okResponse = bytestringResponse "ok"
 
 class Plugin p where
     initialize :: Callbacks -> IO p
