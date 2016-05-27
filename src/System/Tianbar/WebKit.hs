@@ -144,7 +144,7 @@ tianbarWebkitNew = do
     _ <- onWidgetRealize wv $ loadIndexPage wv
 
     Just disp <- displayGetDefault
-    screen <- displayGetScreen disp (fromIntegral myScreen)
+    screen <- displayGetDefaultScreen disp
     monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
     monitorW <- rectangleReadWidth monitorSize
 

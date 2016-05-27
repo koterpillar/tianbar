@@ -1,4 +1,3 @@
-flags: {}
 packages:
 - '.'
 - location:
@@ -6,22 +5,9 @@ packages:
     commit: 7875415bbd0dc161ac9faf13ef89323b09eb022e
   extra-dep: true
 extra-deps:
-- gi-atk-0.2.18.15
-- gi-cairo-0.1.14.15
-- gi-gdk-0.3.18.15
-- gi-gdkpixbuf-0.2.32.15
-- gi-gio-0.2.46.15
-- gi-glib-0.2.46.15
-- gi-gobject-0.2.46.15
-- gi-gtk-0.3.18.15
-- gi-javascriptcore-0.2.12.15
-- gi-pango-0.1.38.15
-- gi-soup-0.2.52.15
-- gi-webkit2-0.2.12.15
-- haskell-gi-0.15
-- haskell-gi-base-0.15
 - X11-xft-0.3.1
-- xdg-basedir-0.2.2
-- xmonad-0.11.1
-- xmonad-contrib-0.11.4
-resolver: lts-5.17
+- gi-javascriptcore-4.0.3
+- gi-soup-2.4.3
+- gi-webkit2-4.0.3
+- xmonad-contrib-0.12
+resolver: lts-6.0

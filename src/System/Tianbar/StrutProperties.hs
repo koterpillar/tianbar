@@ -75,5 +75,5 @@ setStrutProperties window (left, right, top, bottom,
                                  ]
     prop <- atomIntern "_NET_WM_STRUT_PARTIAL" False
     type_ <- atomIntern "CARDINAL" False
-    gdkWindow <- Gtk.widgetGetWindow window
+    Just gdkWindow <- Gtk.widgetGetWindow window
     propertyChange gdkWindow prop type_ 32 PropModeReplace data_
