@@ -53,7 +53,7 @@ main = do
     _ <- onWidgetRealize window $
         setStrutProperties window strut
 
-    box <- boxNew OrientationHorizontal $ fromIntegral widgetSpacing
+    box <- boxNew OrientationHorizontal 0
     containerAdd window box
 
     wk <- tianbarWebkitNew
