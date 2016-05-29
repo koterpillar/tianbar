@@ -21,21 +21,16 @@ define(['jquery', './dbus'], function ($, dbus) {
   function display() {
     var widget = self.widget();
 
-    bus.call({
-      'destination': 'org.freedesktop.IBus',
-      'path': '/org/freedesktop/IBus',
-      'iface': 'org.freedesktop.DBus.Properties',
-      'member': 'Get',
-      'body': [
-        'string:org.freedesktop.IBus',
-        'string:GlobalEngine'
-      ]
-    }).then(function (result) {
-      var body = result.body[0];
-      var imeName = body[3];
-      var languageCode = body[5];
-      var imeIcon = body[8];
-      var imeSymbol = body[12];
+    bus.getProperty(
+      'org.freedesktop.IBus',
+      '/org/freedesktop/IBus',
+      'org.freedesktop.IBus',
+      'GlobalEngine'
+    ).then(function (result) {
+      var imeName = result[3];
+      var languageCode = result[5];
+      var imeIcon = result[8];
+      var imeSymbol = result[12];
 
       widget.empty();
 

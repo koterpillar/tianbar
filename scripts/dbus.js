@@ -72,6 +72,30 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         });
 
         return deferred;
+      },
+
+      /**
+       * Get an object property.
+       * @param destination {String} Destination
+       * @param path {String} Path
+       * @param object {String} Object to get the property of
+       * @param property {String} Property to get
+       * @return {Deferred} A promise to be fulfilled or rejected with the
+       * result
+       */
+      getProperty: function (destination, path, object, property) {
+        return this.call({
+          'destination': destination,
+          'path': path,
+          'iface': 'org.freedesktop.DBus.Properties',
+          'member': 'Get',
+          'body': [
+            'string:' + object,
+            'string:' + property
+          ]
+        }).then(function (result) {
+          return result.body[0];
+        });
       }
     };
   }
