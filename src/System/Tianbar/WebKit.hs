@@ -2,6 +2,7 @@
 module System.Tianbar.WebKit where
 
 import Control.Concurrent
+import Control.Exception
 import Control.Monad
 
 import qualified Data.Text as T
@@ -71,14 +72,21 @@ tianbarWebView = do
     webContextRegisterUriScheme ctx "tianbar" $ \ureq -> do
         uriStr <- uRISchemeRequestGetUri ureq
         let uri = parseURI uriStr
-        response <- withMVar server $ \srv -> handleURI srv uri
+        response <- catch
+            (liftM Right $ withMVar server $ \srv -> handleURI srv uri)
+            (\e -> return $ Left (e :: SomeException))
         case response of
-          Nothing -> do
+          Left exc -> do
+              putStrLn $ "Error on URI: " ++ T.unpack uriStr
+              errDomain <- quarkFromString (Just $ T.pack "Tianbar")
+              err <- gerrorNew errDomain 500 (T.pack $ show exc)
+              uRISchemeRequestFinishError ureq err
+          Right Nothing -> do
               putStrLn $ "URI invalid: " ++ T.unpack uriStr
               errDomain <- quarkFromString (Just $ T.pack "Tianbar")
               err <- gerrorNew errDomain 404 (T.pack "Invalid tianbar: URI")
               uRISchemeRequestFinishError ureq err
-          Just resp' -> do
+          Right (Just resp') -> do
               stream <- memoryInputStreamNewFromData (content resp') noDestroyNotify
               uRISchemeRequestFinish ureq stream (-1) (liftM T.pack $ mimeType resp')
 
