@@ -22,9 +22,16 @@ define(['jquery', './socket'], function ($, socket) {
     });
   }
 
-  uid().then(function (uid) {
+  $.when(
+    $.ajax('tianbar:///execute', {
+      data: {
+        command: 'pacmd load-module module-cli-protocol-unix'
+      }
+    }),
+    uid()
+  ).then(function (_, uid) {
     return socket('/var/run/user/' + uid + '/pulse/cli');
-  }).done(function (pulseSocket) {
+  }).then(function (pulseSocket) {
     pulseSocket.recv.add(function (dump) {
       var mute = MUTE_RE.exec(dump)[1] === "yes";
       var volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
