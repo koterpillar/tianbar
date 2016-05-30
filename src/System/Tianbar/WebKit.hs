@@ -21,6 +21,7 @@ import GI.GLib.Functions hiding (getUserConfigDir)
 
 import GI.Gtk hiding (main)
 
+import GI.WebKit2.Callbacks
 import GI.WebKit2.Enums
 import GI.WebKit2.Interfaces.PermissionRequest (permissionRequestAllow)
 import GI.WebKit2.Objects.SecurityManager
@@ -69,26 +70,7 @@ tianbarWebView = do
     ctx <- webViewGetContext wk
     sec <- webContextGetSecurityManager ctx
     securityManagerRegisterUriSchemeAsCorsEnabled sec "tianbar"
-    webContextRegisterUriScheme ctx "tianbar" $ \ureq -> do
-        uriStr <- uRISchemeRequestGetUri ureq
-        let uri = parseURI uriStr
-        response <- catch
-            (liftM Right $ withMVar server $ \srv -> handleURI srv uri)
-            (\e -> return $ Left (e :: SomeException))
-        case response of
-          Left exc -> do
-              putStrLn $ "Error on URI: " ++ T.unpack uriStr
-              errDomain <- quarkFromString (Just $ T.pack "Tianbar")
-              err <- gerrorNew errDomain 500 (T.pack $ show exc)
-              uRISchemeRequestFinishError ureq err
-          Right Nothing -> do
-              putStrLn $ "URI invalid: " ++ T.unpack uriStr
-              errDomain <- quarkFromString (Just $ T.pack "Tianbar")
-              err <- gerrorNew errDomain 404 (T.pack "Invalid tianbar: URI")
-              uRISchemeRequestFinishError ureq err
-          Right (Just resp') -> do
-              stream <- memoryInputStreamNewFromData (content resp') noDestroyNotify
-              uRISchemeRequestFinish ureq stream (-1) (liftM T.pack $ mimeType resp')
+    webContextRegisterUriScheme ctx "tianbar" (handleRequest server)
 
     -- Handle new window creation
     _ <- onWebViewCreate wk $ \_ -> do
@@ -131,6 +113,33 @@ tianbarWebView = do
     return wk
 
 
+handleRequest :: MVar Server -> URISchemeRequestCallback
+handleRequest server ureq = do
+    uriStr <- uRISchemeRequestGetUri ureq
+    let uri = parseURI uriStr
+    response <- catch
+        (liftM Right $ withMVar server $ \srv -> handleURI srv uri)
+        (\e -> return $ Left (e :: SomeException))
+    case response of
+      Left exc -> do
+          putStrLn $ "Error on URI: " ++ T.unpack uriStr
+          err <- tianbarError 500 (show exc)
+          uRISchemeRequestFinishError ureq err
+      Right Nothing -> do
+          putStrLn $ "URI invalid: " ++ T.unpack uriStr
+          err <- tianbarError 404 "Invalid tianbar: URI"
+          uRISchemeRequestFinishError ureq err
+      Right (Just resp') -> do
+          stream <- memoryInputStreamNewFromData (content resp') noDestroyNotify
+          uRISchemeRequestFinish ureq stream (-1) (liftM T.pack $ mimeType resp')
+
+
+tianbarError :: Int -> String -> IO GError
+tianbarError code message = do
+    errDomain <- quarkFromString (Just $ T.pack "Tianbar")
+    gerrorNew errDomain (fromIntegral code) (T.pack message)
+
+
 loadIndexPage :: WebView -> IO ()
 loadIndexPage wk = do
     htmlFile <- getUserConfigFile appName "index.html"
@@ -144,6 +153,7 @@ loadIndexPage wk = do
         copyFile exampleHtml htmlFile
 
     webViewLoadUri wk $ T.pack $ "tianbar:///user/index.html"
+
 
 tianbarWebkitNew :: IO Widget
 tianbarWebkitNew = do
