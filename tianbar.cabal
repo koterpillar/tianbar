@@ -62,6 +62,7 @@ executable tianbar
                      , System.Tianbar.Server
                      , System.Tianbar.StrutProperties
                      , System.Tianbar.Plugin
+                     , System.Tianbar.Plugin.All
                      , System.Tianbar.Plugin.Combined
                      , System.Tianbar.Plugin.FileSystem
                      , System.Tianbar.Plugin.ExecuteCommand

@@ -33,12 +33,12 @@ import GI.WebKit2.Objects.WindowProperties
 import System.Directory
 import System.Environment.XDG.BaseDir
 
-import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 import System.Tianbar.Configuration
 import System.Tianbar.Server
 
 import Paths_tianbar
+
 
 tianbarWebView :: IO WebView
 tianbarWebView = do
@@ -57,12 +57,12 @@ tianbarWebView = do
         return True
 
     -- Initialize plugins, and re-initialize on reloads
-    server <- startServer (callbacks wk) >>= newMVar
+    server <- startServer wk >>= newMVar
     _ <- onWebViewLoadChanged wk $ \event -> do
         when (event == LoadEventStarted) $ do
             modifyMVar_ server $ \oldServer -> do
                 stopServer oldServer
-                startServer (callbacks wk)
+                startServer wk
 
     -- All Tianbar plugins are served under tianbar://, allow it for CORS and
     -- register its handler

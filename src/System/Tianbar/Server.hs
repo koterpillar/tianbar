@@ -5,28 +5,17 @@ module System.Tianbar.Server (
 
 -- Server to handle JS callbacks
 
+import GI.WebKit2.Objects.WebView
+
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
-import System.Tianbar.Plugin.Combined
-import System.Tianbar.Plugin.DBus
-import System.Tianbar.Plugin.ExecuteCommand
-import System.Tianbar.Plugin.FileSystem
-import System.Tianbar.Plugin.GSettings
-import System.Tianbar.Plugin.Socket
+import System.Tianbar.Plugin.All
 
 data Server = Server { handleURI :: URI -> IO (Maybe Response)
                      , stopServer :: IO ()
                      }
 
-startServer :: Callbacks -> IO Server
+startServer :: WebView -> IO Server
 startServer c = do
-    plugins <- initialize c :: IO AllPlugins
+    plugins <- initialize (callbacks c) :: IO AllPlugins
     return $ Server (runPlugin plugins) (destroy plugins)
-
-type AllPlugins =
-    Combined DBusPlugin (
-        Combined ExecuteCommand (
-            Combined FileSystem (
-                Combined GSettings (
-                    Combined SocketPlugin (
-                        Combined Empty Empty)))))
