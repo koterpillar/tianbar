@@ -54,12 +54,15 @@ busDestroy bus = do
 
 type BusMap = M.Map String Bus
 
-data DBusPlugin = DBusPlugin { dbusHost :: Callbacks
-                             , dbusMap :: BusMap
+data DBusPlugin = DBusPlugin { _dbusHost :: Callbacks
+                             , _dbusMap :: BusMap
                              }
 
-dbusMapL :: Lens' DBusPlugin BusMap
-dbusMapL inj (DBusPlugin h m) = DBusPlugin h <$> inj m
+dbusMap :: Lens' DBusPlugin BusMap
+dbusMap inj (DBusPlugin h m) = DBusPlugin h <$> inj m
+
+dbusHost :: Getter DBusPlugin Callbacks
+dbusHost inj (DBusPlugin h m) = flip DBusPlugin m <$> inj h
 
 instance Plugin DBusPlugin where
     initialize c = do
@@ -70,7 +73,7 @@ instance Plugin DBusPlugin where
                                 ]
         return $ DBusPlugin c busMap
 
-    destroy plugin = forM_ (dbusMap plugin) busDestroy
+    destroy plugin = forM_ (plugin ^. dbusMap) busDestroy
 
     handler = dir "dbus" $ msum [ busesHandler
                                 , connectBusHandler
@@ -83,7 +86,7 @@ connectBusHandler = dir "connect" $ do
     addressStr <- look "address"
     address <- MaybeT $ return $ parseAddress addressStr
     bus <- liftIO $ busNew $ connect address
-    dbusMapL . at name .= Just bus
+    dbusMap . at name .= Just bus
     okResponse
 
 type BusReference = Lens' DBusPlugin Bus
@@ -95,7 +98,7 @@ unsafeMaybeLens _ Nothing = error "unsafeMaybeLens applied to Nothing"
 busesHandler :: Handler DBusPlugin Response
 busesHandler = path $ \busName -> do
     let busRef :: Lens' DBusPlugin (Maybe Bus)
-        busRef = dbusMapL . at busName
+        busRef = dbusMap . at busName
     bus <- use busRef
     case bus of
       Just _ -> busHandler $ busRef . unsafeMaybeLens
@@ -112,7 +115,7 @@ listenHandler busRef = dir "listen" $ withData $ \matcher -> do
     nullDir
     index <- look "index"
     clnt <- use $ busRef . busClient
-    host <- use (to dbusHost)
+    host <- use dbusHost
     listener <- liftIO $ addMatch clnt matcher $ \sig -> callback host index [sig]
     busRef . busSignals . at index .= Just listener
     okResponse
