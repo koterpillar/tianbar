@@ -239,10 +239,11 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       $.each(devices, function(_, device) {
         dbus.system.listen(
           { path: device }
-        ).add(function() {
+        ).then(function (evt) {
+          evt.add(function() {
             self.refreshDevice(device);
-          }
-        );
+          });
+        });
         self.refreshDevice(device);
       });
     });
@@ -268,7 +269,9 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   $(document).ready(function () {
     dbus.system.listen(
       { path: '/org/freedesktop/UPower' }
-    ).add(self.refresh);
+    ).then(function (evt) {
+      evt.add(self.refresh);
+    });
     self.refresh();
   });
 

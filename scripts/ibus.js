@@ -69,7 +69,9 @@ define(['jquery', './dbus'], function ($, dbus) {
       dbus.connect(address).then(function (connectedBus) {
         bus = connectedBus;
         display();
-        bus.listen({ member: 'GlobalEngineChanged' }).add(display);
+        bus.listen({ member: 'GlobalEngineChanged' }).then(function (evt) {
+          evt.add(display);
+        });
       });
     });
   });
