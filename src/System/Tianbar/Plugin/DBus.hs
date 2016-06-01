@@ -68,7 +68,7 @@ instance Plugin DBusPlugin where
                                 ]
         return $ DBusPlugin c busMap
 
-    destroy plugin = forM_ (dbusMap plugin) $ busDestroy
+    destroy plugin = forM_ (dbusMap plugin) busDestroy
 
     handler = dir "dbus" $ msum [ busesHandler
                                 , connectBusHandler

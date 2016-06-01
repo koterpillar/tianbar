@@ -59,8 +59,8 @@ tianbarWebView = do
 
     -- Initialize plugins, and re-initialize on reloads
     server <- startServer wk >>= newMVar
-    _ <- onWebViewLoadChanged wk $ \event -> do
-        when (event == LoadEventStarted) $ do
+    _ <- onWebViewLoadChanged wk $
+        \event -> when (event == LoadEventStarted) $
             modifyMVar_ server $ \oldServer -> do
                 stopServer oldServer
                 startServer wk
@@ -118,7 +118,7 @@ handleRequest server ureq = do
     uriStr <- uRISchemeRequestGetUri ureq
     let uri = parseURI uriStr
     response <- catch
-        (liftM Right $ withMVar server $ \srv -> handleURI srv uri)
+        (fmap Right $ withMVar server $ \srv -> handleURI srv uri)
         (\e -> return $ Left (e :: SomeException))
     case response of
       Left exc -> do
@@ -131,7 +131,7 @@ handleRequest server ureq = do
           uRISchemeRequestFinishError ureq err
       Right (Just resp') -> do
           stream <- memoryInputStreamNewFromData (content resp') noDestroyNotify
-          uRISchemeRequestFinish ureq stream (-1) (liftM T.pack $ mimeType resp')
+          uRISchemeRequestFinish ureq stream (-1) (T.pack <$> mimeType resp')
 
 
 tianbarError :: Int -> String -> IO GError
@@ -152,7 +152,7 @@ loadIndexPage wk = do
         exampleHtml <- getDataFileName "index.html"
         copyFile exampleHtml htmlFile
 
-    webViewLoadUri wk $ T.pack $ "tianbar:///user/index.html"
+    webViewLoadUri wk $ T.pack "tianbar:///user/index.html"
 
 
 tianbarWebkitNew :: IO Widget

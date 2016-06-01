@@ -44,7 +44,7 @@ propertyChange window property type_ format mode elements = liftIO $ do
     let nelements = length elements
     let mode' = fromIntegral $ fromEnum mode
     data_ <- allocBytes (sizeOf (head elements) * nelements) :: IO (Ptr d)
-    forM_ (zip [0..] elements) $ \(i, el) -> pokeElemOff data_ i el
+    forM_ (zip [0..] elements) $ uncurry $ pokeElemOff data_
     gdk_property_change window' property' type_' format mode' (castPtr data_) (fromIntegral nelements)
     touchManagedPtr window
     touchManagedPtr property

@@ -28,7 +28,7 @@ startServer wk = do
 
 handleURI ::  Server -> URI -> IO (Maybe Response)
 handleURI server uri = modifyMVar (serverPlugins server) $
-    liftM swap . flip runPlugin uri
+    fmap swap . flip runPlugin uri
 
 stopServer :: Server -> IO ()
 stopServer server = takeMVar (serverPlugins server) >>= destroy

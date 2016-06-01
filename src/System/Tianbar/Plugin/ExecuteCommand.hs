@@ -13,7 +13,7 @@ data ExecuteCommand = ExecuteCommand
 instance Plugin ExecuteCommand where
     initialize _ = return ExecuteCommand
 
-    handler = dir "execute" $ executeHandler
+    handler = dir "execute" executeHandler
 
 executeHandler :: Handler ExecuteCommand Response
 executeHandler = do

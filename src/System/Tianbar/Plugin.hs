@@ -92,17 +92,17 @@ look param = looks param >>= \values -> case values of
                _ -> mzero
 
 looks :: String -> Handler p [String]
-looks param = (asks uriQuery) >>= \params -> do
+looks param = asks uriQuery >>= \params -> do
     let paramTxt = U.fromString param
-    let isParam (p, value) | p == paramTxt = liftM U.toString value
+    let isParam (p, value) | p == paramTxt = fmap U.toString value
                            | otherwise = Nothing
-    MaybeT $ return $ Just $ catMaybes $ map isParam params
+    MaybeT $ return $ Just $ mapMaybe isParam params
 
 class FromData a where
     fromData :: forall p. Handler p a
 
 instance FromData a => FromData (Maybe a) where
-    fromData = liftM Just fromData `mplus` return Nothing
+    fromData = fmap Just fromData `mplus` return Nothing
 
 withData :: FromData a => (a -> Handler p r) -> Handler p r
 withData h = do
@@ -137,4 +137,4 @@ class Plugin p where
     handler :: Handler p Response
 
 runPlugin :: (Plugin p, MonadIO m) => p -> URI -> m (Maybe Response, p)
-runPlugin p = runHandler handler p
+runPlugin = runHandler handler

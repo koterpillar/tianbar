@@ -30,8 +30,7 @@ spSock :: Lens' SocketPlugin SocketMap
 spSock inj (SocketPlugin h m) = SocketPlugin h <$> inj m
 
 instance Plugin SocketPlugin where
-    initialize c = do
-        return $ SocketPlugin c M.empty
+    initialize c = return $ SocketPlugin c M.empty
 
     destroy = mapM_ close . M.elems . view spSock
 

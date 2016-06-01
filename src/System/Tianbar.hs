@@ -34,7 +34,7 @@ main :: IO ()
 main = do
     progName <- getProgName
     args <- getArgs
-    _ <- GtkFunctions.init $ Just $ map T.pack $ (progName : args)
+    _ <- GtkFunctions.init $ Just $ map T.pack (progName : args)
 
     Just disp <- displayGetDefault
     screen <- displayGetDefaultScreen disp
