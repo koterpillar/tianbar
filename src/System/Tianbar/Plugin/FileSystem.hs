@@ -3,8 +3,7 @@ module System.Tianbar.Plugin.FileSystem where
 -- Serve files from the data directory
 
 import Control.Monad
-import Control.Monad.Trans
-import Control.Monad.Trans.Reader
+import Control.Monad.Reader
 
 import qualified Data.List as L
 import qualified Data.Text as T
@@ -27,14 +26,14 @@ getRootFileName filePath = return $ "/" ++ filePath
 instance Plugin FileSystem where
     initialize _ = return FileSystem
 
-    handler _ = msum [ dir "data" $ directoryHandler getDataFileName
-                     , dir "user" $ directoryHandler getUserFileName
-                     , dir "root" $ directoryHandler getRootFileName
-                     ]
+    handler = msum [ dir "data" $ directoryHandler getDataFileName
+                   , dir "user" $ directoryHandler getUserFileName
+                   , dir "root" $ directoryHandler getRootFileName
+                   ]
 
-directoryHandler :: (String -> IO FilePath) -> Handler Response
+directoryHandler :: (String -> IO FilePath) -> Handler FileSystem Response
 directoryHandler getFileName = do
-    uri <- lift $ ask
+    uri <- ask
     let filePath = L.intercalate "/" $ map T.unpack $ uriPathSegments uri
     dataFile <- liftIO $ getFileName filePath
     serveFile dataFile

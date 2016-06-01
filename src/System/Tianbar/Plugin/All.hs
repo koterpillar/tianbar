@@ -15,4 +15,4 @@ type AllPlugins =
             Combined FileSystem (
                 Combined GSettings (
                     Combined SocketPlugin (
-                        Combined Empty Empty)))))
+                        Combined EmptyPlugin EmptyPlugin)))))

@@ -13,7 +13,7 @@ data GSettings = GSettings
 instance Plugin GSettings where
     initialize _ = return GSettings
 
-    handler _ = dir "gsettings" $
+    handler = dir "gsettings" $
         path $ \schema ->
         path $ \key -> do
             nullDir

@@ -13,9 +13,9 @@ data ExecuteCommand = ExecuteCommand
 instance Plugin ExecuteCommand where
     initialize _ = return ExecuteCommand
 
-    handler _ = dir "execute" $ executeHandler
+    handler = dir "execute" $ executeHandler
 
-executeHandler :: Handler Response
+executeHandler :: Handler ExecuteCommand Response
 executeHandler = do
     nullDir
     command <- look "command"

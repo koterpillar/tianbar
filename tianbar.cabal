@@ -43,6 +43,7 @@ executable tianbar
                      , gi-glib
                      , gi-gtk
                      , gi-webkit2
+                     , lens
                      , mime-types
                      , mtl
                      , network
