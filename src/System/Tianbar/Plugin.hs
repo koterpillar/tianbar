@@ -8,6 +8,7 @@ module System.Tianbar.Plugin (
     URI (..),
     bytestringResponse,
     dir,
+    jsonResponse,
     look,
     looks,
     nullDir,
@@ -27,8 +28,10 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Maybe
 
+import Data.Aeson (ToJSON, encode)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.UTF8 as U
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -127,6 +130,9 @@ bytestringResponse str = return $ Response str (Just "text/plain")
 
 okResponse :: Handler p Response
 okResponse = bytestringResponse "ok"
+
+jsonResponse :: ToJSON v => v -> Handler p Response
+jsonResponse = bytestringResponse . LBS.toStrict . encode
 
 class Plugin p where
     initialize :: Callbacks -> IO p

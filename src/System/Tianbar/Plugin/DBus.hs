@@ -9,8 +9,6 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
 
-import Data.Aeson (encode)
-import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.Map as M
 
 import DBus (parseAddress)
@@ -138,4 +136,4 @@ callHandler busRef = dir "call" $ withData $ \mcall -> do
     nullDir
     clnt <- use $ busRef . busClient
     res <- liftIO $ call clnt mcall
-    bytestringResponse $ LBS.toStrict $ encode res
+    jsonResponse res
