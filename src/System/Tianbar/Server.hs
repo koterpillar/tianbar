@@ -8,7 +8,6 @@ module System.Tianbar.Server (
 -- Server to handle JS callbacks
 
 import Control.Concurrent
-import Control.Monad
 
 import Data.Tuple
 
