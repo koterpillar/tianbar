@@ -47,8 +47,10 @@ busNew :: IO Client -> IO Bus
 busNew conn = Bus <$> conn <*> pure M.empty
 
 busDestroy :: Bus -> IO ()
--- TODO: remove signals?
-busDestroy bus = disconnect $ bus ^. busClient
+busDestroy bus = do
+    let clnt = bus ^. busClient
+    forM_ (bus ^. busSignals) $ removeMatch clnt
+    disconnect clnt
 
 type BusMap = M.Map String Bus
 
