@@ -18,7 +18,7 @@ combined1 inj (Combined p q) = flip Combined q <$> inj p
 combined2 :: Lens' (Combined p q) q
 combined2 inj (Combined p q) = Combined p <$> inj q
 
-runWithPart :: Lens' p p' -> Handler p' Response -> Handler p Response
+runWithPart :: Lens' p p' -> ServerPart p' Response -> ServerPart p Response
 runWithPart l h' = do
     uri <- ask
     p <- get

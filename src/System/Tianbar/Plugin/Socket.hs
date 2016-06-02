@@ -36,7 +36,7 @@ instance Plugin SocketPlugin where
 
     handler = dir "socket" $ msum [connectHandler, sendHandler, closeHandler]
 
-connectHandler :: Handler SocketPlugin Response
+connectHandler :: ServerPart SocketPlugin Response
 connectHandler = dir "connect" $ do
     nullDir
     index <- look "callbackIndex"
@@ -52,7 +52,7 @@ connectHandler = dir "connect" $ do
     spSock . at index .= Just sock
     callbackResponse index
 
-sendHandler :: Handler SocketPlugin Response
+sendHandler :: ServerPart SocketPlugin Response
 sendHandler = dir "send" $ do
     nullDir
     index <- look "callbackIndex"
@@ -62,7 +62,7 @@ sendHandler = dir "send" $ do
     _ <- liftIO $ send sock dataToSend
     callbackResponse index
 
-closeHandler :: Handler SocketPlugin Response
+closeHandler :: ServerPart SocketPlugin Response
 closeHandler = dir "close" $ do
     nullDir
     index <- look "callbackIndex"

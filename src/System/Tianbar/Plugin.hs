@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 module System.Tianbar.Plugin (
-    Handler,
+    ServerPart,
     Plugin (..),
     Response (..),
     FromData (..),
@@ -61,19 +61,19 @@ data Response = Response { content :: B.ByteString
                          , mimeType :: Maybe String
                          }
 
-type Handler s t = MaybeT (ReaderT URI (StateT s IO)) t
+type ServerPart s t = MaybeT (ReaderT URI (StateT s IO)) t
 
-runHandler :: MonadIO m => Handler p t -> p -> URI -> m (Maybe t, p)
+runHandler :: MonadIO m => ServerPart p t -> p -> URI -> m (Maybe t, p)
 runHandler h p uri = liftIO $ runStateT (runReaderT (runMaybeT h) uri) p
 
-withUri :: URI -> Handler p t -> Handler p t
+withUri :: URI -> ServerPart p t -> ServerPart p t
 withUri newUri h = do
     p <- get
     (res, p') <- liftIO $ runHandler h p newUri
     put p'
     MaybeT $ return res
 
-path :: (String -> Handler p t) -> Handler p t
+path :: (String -> ServerPart p t) -> ServerPart p t
 path h = do
     uri <- ask
     let segments = uriPathSegments uri
@@ -82,20 +82,20 @@ path h = do
     let uri' = uri { uriPathSegments = tail segments }
     withUri uri' $ h (T.unpack $ head segments)
 
-dir :: String -> Handler p t -> Handler p t
+dir :: String -> ServerPart p t -> ServerPart p t
 dir name h = path $ \name' -> guard (name == name') >> h
 
-nullDir :: Handler p ()
+nullDir :: ServerPart p ()
 nullDir = do
     segments <- asks uriPathSegments
     guard $ null segments
 
-look :: String -> Handler p String
+look :: String -> ServerPart p String
 look param = looks param >>= \values -> case values of
                [value] -> return value
                _ -> mzero
 
-looks :: String -> Handler p [String]
+looks :: String -> ServerPart p [String]
 looks param = asks uriQuery >>= \params -> do
     let paramTxt = U.fromString param
     let isParam (p, value) | p == paramTxt = fmap U.toString value
@@ -103,39 +103,39 @@ looks param = asks uriQuery >>= \params -> do
     MaybeT $ return $ Just $ mapMaybe isParam params
 
 class FromData a where
-    fromData :: forall p. Handler p a
+    fromData :: forall p. ServerPart p a
 
 instance FromData a => FromData (Maybe a) where
     fromData = fmap Just fromData `mplus` return Nothing
 
-withData :: FromData a => (a -> Handler p r) -> Handler p r
+withData :: FromData a => (a -> ServerPart p r) -> ServerPart p r
 withData h = do
     d <- fromData
     h d
 
-serveFile :: FilePath -> Handler p Response
+serveFile :: FilePath -> ServerPart p Response
 serveFile filePath = do
     contents <- liftIO $ B.readFile filePath
     let fileType = defaultMimeLookup $ T.pack $ takeFileName filePath
     -- FIXME: Guess the MIME type
     return $ Response contents (Just $ U.toString fileType)
 
-stringResponse :: String -> Handler p Response
+stringResponse :: String -> ServerPart p Response
 stringResponse = bytestringResponse . U.fromString
 
-textResponse :: T.Text -> Handler p Response
+textResponse :: T.Text -> ServerPart p Response
 textResponse = bytestringResponse . TE.encodeUtf8
 
-bytestringResponse :: B.ByteString -> Handler p Response
+bytestringResponse :: B.ByteString -> ServerPart p Response
 bytestringResponse str = return $ Response str (Just "text/plain")
 
-okResponse :: Handler p Response
+okResponse :: ServerPart p Response
 okResponse = bytestringResponse "ok"
 
-jsonResponse :: ToJSON v => v -> Handler p Response
+jsonResponse :: ToJSON v => v -> ServerPart p Response
 jsonResponse = bytestringResponse . LBS.toStrict . encode
 
-callbackResponse :: String -> Handler p Response
+callbackResponse :: String -> ServerPart p Response
 callbackResponse idx = jsonResponse $ object [ "callbackIndex" .= idx ]
 
 class Plugin p where
@@ -144,7 +144,7 @@ class Plugin p where
     destroy :: p -> IO ()
     destroy _ = return ()
 
-    handler :: Handler p Response
+    handler :: ServerPart p Response
 
 runPlugin :: (Plugin p, MonadIO m) => p -> URI -> m (Maybe Response, p)
 runPlugin = runHandler handler

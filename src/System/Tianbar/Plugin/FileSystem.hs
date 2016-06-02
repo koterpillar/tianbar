@@ -31,7 +31,7 @@ instance Plugin FileSystem where
                    , dir "root" $ directoryHandler getRootFileName
                    ]
 
-directoryHandler :: (String -> IO FilePath) -> Handler FileSystem Response
+directoryHandler :: (String -> IO FilePath) -> ServerPart FileSystem Response
 directoryHandler getFileName = do
     uri <- ask
     let filePath = L.intercalate "/" $ map T.unpack $ uriPathSegments uri

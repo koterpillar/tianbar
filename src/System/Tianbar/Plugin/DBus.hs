@@ -77,7 +77,7 @@ instance Plugin DBusPlugin where
                                 , connectBusHandler
                                 ]
 
-connectBusHandler :: Handler DBusPlugin Response
+connectBusHandler :: ServerPart DBusPlugin Response
 connectBusHandler = dir "connect" $ do
     nullDir
     name <- look "name"
@@ -93,7 +93,7 @@ unsafeMaybeLens :: Lens' (Maybe a) a
 unsafeMaybeLens inj (Just v) = Just <$> inj v
 unsafeMaybeLens _ Nothing = error "unsafeMaybeLens applied to Nothing"
 
-busesHandler :: Handler DBusPlugin Response
+busesHandler :: ServerPart DBusPlugin Response
 busesHandler = path $ \busName -> do
     let busRef :: Lens' DBusPlugin (Maybe Bus)
         busRef = dbusMap . at busName
@@ -102,13 +102,13 @@ busesHandler = path $ \busName -> do
       Just _ -> busHandler $ busRef . unsafeMaybeLens
       Nothing -> mzero
 
-busHandler :: BusReference -> Handler DBusPlugin Response
+busHandler :: BusReference -> ServerPart DBusPlugin Response
 busHandler plugin = msum [ listenHandler plugin
                          , stopHandler plugin
                          , callHandler plugin
                          ]
 
-listenHandler :: BusReference -> Handler DBusPlugin Response
+listenHandler :: BusReference -> ServerPart DBusPlugin Response
 listenHandler busRef = dir "listen" $ withData $ \matcher -> do
     nullDir
     index <- look "index"
@@ -118,7 +118,7 @@ listenHandler busRef = dir "listen" $ withData $ \matcher -> do
     busRef . busSignals . at index .= Just listener
     callbackResponse index
 
-stopHandler :: BusReference -> Handler DBusPlugin Response
+stopHandler :: BusReference -> ServerPart DBusPlugin Response
 stopHandler busRef = dir "stop" $ do
     nullDir
     index <- look "index"
@@ -131,7 +131,7 @@ stopHandler busRef = dir "stop" $ do
             callbackResponse index
         Nothing -> mzero
 
-callHandler :: BusReference -> Handler DBusPlugin Response
+callHandler :: BusReference -> ServerPart DBusPlugin Response
 callHandler busRef = dir "call" $ withData $ \mcall -> do
     nullDir
     clnt <- use $ busRef . busClient

@@ -15,7 +15,7 @@ instance Plugin ExecuteCommand where
 
     handler = dir "execute" executeHandler
 
-executeHandler :: Handler ExecuteCommand Response
+executeHandler :: ServerPart ExecuteCommand Response
 executeHandler = do
     nullDir
     command <- look "command"
