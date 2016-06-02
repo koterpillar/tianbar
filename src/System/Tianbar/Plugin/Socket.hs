@@ -4,7 +4,7 @@ module System.Tianbar.Plugin.Socket where
 -- Socket connectivity
 
 import Control.Concurrent
-import Control.Lens
+import Control.Lens hiding (index)
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.State
@@ -39,7 +39,7 @@ instance Plugin SocketPlugin where
 connectHandler :: Handler SocketPlugin Response
 connectHandler = dir "connect" $ do
     nullDir
-    callbackIndex <- look "callbackIndex"
+    index <- look "callbackIndex"
     socketPath <- look "path"
     sock <- liftIO $ do
         s <- socket AF_UNIX Stream defaultProtocol
@@ -48,31 +48,31 @@ connectHandler = dir "connect" $ do
     host <- use spHost
     _ <- liftIO $ forkIO $ void $ forever $ do
         response <- recv sock 4096
-        callback host callbackIndex [response]
-    spSock . at callbackIndex .= Just sock
-    okResponse
+        callback host index [response]
+    spSock . at index .= Just sock
+    callbackResponse index
 
 sendHandler :: Handler SocketPlugin Response
 sendHandler = dir "send" $ do
     nullDir
-    callbackIndex <- look "callbackIndex"
-    sock <- MaybeT $ getSocket callbackIndex
+    index <- look "callbackIndex"
+    sock <- MaybeT $ getSocket index
     dataToSend <- look "data"
     -- TODO: resend until done
     _ <- liftIO $ send sock dataToSend
-    okResponse
+    callbackResponse index
 
 closeHandler :: Handler SocketPlugin Response
 closeHandler = dir "close" $ do
     nullDir
-    callbackIndex <- look "callbackIndex"
-    sock <- getSocket callbackIndex
+    index <- look "callbackIndex"
+    sock <- getSocket index
     case sock of
         Nothing -> return ()
         Just sock' -> do
             liftIO $ close sock'
-            spSock . at callbackIndex .= Nothing
-    okResponse
+            spSock . at index .= Nothing
+    callbackResponse index
 
 getSocket :: MonadState SocketPlugin m => String -> m (Maybe Socket)
 getSocket callbackIndex = use $ spSock . at callbackIndex

@@ -116,7 +116,7 @@ listenHandler busRef = dir "listen" $ withData $ \matcher -> do
     host <- use dbusHost
     listener <- liftIO $ addMatch clnt matcher $ \sig -> callback host index [sig]
     busRef . busSignals . at index .= Just listener
-    okResponse
+    callbackResponse index
 
 stopHandler :: BusReference -> Handler DBusPlugin Response
 stopHandler busRef = dir "stop" $ do
@@ -128,7 +128,7 @@ stopHandler busRef = dir "stop" $ do
             busRef . busSignals . at index .= Nothing
             clnt <- use $ busRef . busClient
             liftIO $ removeMatch clnt l
-            okResponse
+            callbackResponse index
         Nothing -> mzero
 
 callHandler :: BusReference -> Handler DBusPlugin Response
