@@ -14,7 +14,8 @@ define(['jquery'], function ($) {
   function createEvent() {
     var evt = $.Callbacks();
 
-    var index = events.push(evt) - 1;
+    var index = Math.random();
+    events[index] = evt;
 
     return {
       index: index,
