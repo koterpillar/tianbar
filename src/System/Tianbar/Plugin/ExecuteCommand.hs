@@ -7,11 +7,12 @@ import Control.Monad.Trans
 import System.Process
 
 import System.Tianbar.Plugin
+import System.Tianbar.RequestResponse
 
 data ExecuteCommand = ExecuteCommand
 
 instance Plugin ExecuteCommand where
-    initialize _ = return ExecuteCommand
+    initialize = return ExecuteCommand
 
     handler = dir "execute" executeHandler
 

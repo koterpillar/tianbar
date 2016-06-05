@@ -13,21 +13,21 @@ import Data.Tuple
 
 import GI.WebKit2.Objects.WebView
 
-import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 import System.Tianbar.Plugin.All
 
-newtype Server = Server { serverPlugins :: MVar AllPlugins }
+data Server = Server { serverHost :: WebView
+                     , serverPlugins :: MVar AllPlugins }
 
 startServer :: WebView -> IO Server
 startServer wk = do
-    plugins <- initialize (callbacks wk)
+    plugins <- initialize
     pluginsVar <- newMVar plugins
-    return $ Server pluginsVar
+    return $ Server wk pluginsVar
 
 handleURI ::  Server -> URI -> IO (Maybe Response)
 handleURI server uri = modifyMVar (serverPlugins server) $
-    fmap swap . flip runPlugin uri
+    fmap swap . \p -> runPlugin p uri (serverHost server)
 
 stopServer :: Server -> IO ()
 stopServer server = takeMVar (serverPlugins server) >>= destroy

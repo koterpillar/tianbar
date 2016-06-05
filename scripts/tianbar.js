@@ -4,22 +4,22 @@
  * Requires 'jquery' to be available through RequireJS.
  */
 define(['jquery'], function ($) {
-  /**
-   * Create a new server event.
-   * @return {Object} 'index' for the event index to supply to Tianbar; 'callback' for the jQuery callback object
-   */
   "use strict";
   var events = window.tianbarEvents = window.tianbarEvents || [];
 
-  function createEvent() {
-    var evt = $.Callbacks();
+  /**
+   * Create a new server event.
+   * @param response {Object} Server response with the callback index
+   * @returns {Object} 'callback' for the jQuery callback object; 'callbackIndex' for the event index to supply to Tianbar
+   */
+  function createEvent(response) {
+    var callbackIndex = JSON.parse(response).callbackIndex;
 
-    var index = Math.random();
-    events[index] = evt;
+    var evt = events[callbackIndex] = $.Callbacks();
 
     return {
-      index: index,
-      callback: evt
+      callback: evt,
+      callbackIndex: callbackIndex
     };
   }
 

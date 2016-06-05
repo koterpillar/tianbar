@@ -22,16 +22,13 @@ define(['jquery', './tianbar'], function ($, tianbar) {
        * @returns {Deferred} Promise to be fulfilled with a Tianbar event object
        */
       listen: function (match) {
-        var evt = tianbar.createEvent();
-        var data = {
-          index: evt.index
-        };
+        var data = {};
         copyProperties(['path', 'iface', 'member'], match, data);
-        return $.ajax('tianbar:///dbus/' + busName + '/listen', {
-          data: data
-        }).then(function () {
-          return evt.callback;
-        });
+        return $.ajax('tianbar:///dbus/' + busName + '/listen').
+          then(tianbar.createEvent).
+          then(function (evt) {
+            return evt.callback;
+          });
       },
 
       /**

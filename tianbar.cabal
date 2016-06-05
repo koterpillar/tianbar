@@ -72,6 +72,7 @@ executable tianbar
                      , System.Tianbar.Plugin.DBus.JSON
                      , System.Tianbar.Plugin.GSettings
                      , System.Tianbar.Plugin.Socket
+                     , System.Tianbar.RequestResponse
                      , System.Tianbar.WebKit
   ghc-options:         -Wall -rtsopts -threaded
 

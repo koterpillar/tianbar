@@ -7,11 +7,12 @@ import Control.Monad.IO.Class
 import System.Process
 
 import System.Tianbar.Plugin
+import System.Tianbar.RequestResponse
 
 data GSettings = GSettings
 
 instance Plugin GSettings where
-    initialize _ = return GSettings
+    initialize = return GSettings
 
     handler = dir "gsettings" $
         path $ \schema ->

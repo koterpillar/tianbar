@@ -7,6 +7,7 @@ import Control.Lens hiding (index)
 
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 
 import qualified Data.Map as M
@@ -27,9 +28,10 @@ import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 import System.Tianbar.Plugin.DBus.JSON ()
 import System.Tianbar.Plugin.DBus.FromData ()
+import System.Tianbar.RequestResponse
 
 
-type SignalMap = M.Map String SignalHandler
+type SignalMap = M.Map CallbackIndex SignalHandler
 
 data Bus = Bus { _busClient :: Client
                , _busSignals :: SignalMap
@@ -52,24 +54,20 @@ busDestroy bus = do
 
 type BusMap = M.Map String Bus
 
-data DBusPlugin = DBusPlugin { _dbusHost :: Callbacks
-                             , _dbusMap :: BusMap
+data DBusPlugin = DBusPlugin { _dbusMap :: BusMap
                              }
 
 dbusMap :: Lens' DBusPlugin BusMap
-dbusMap inj (DBusPlugin h m) = DBusPlugin h <$> inj m
-
-dbusHost :: Getter DBusPlugin Callbacks
-dbusHost inj (DBusPlugin h m) = flip DBusPlugin m <$> inj h
+dbusMap inj (DBusPlugin m) = DBusPlugin <$> inj m
 
 instance Plugin DBusPlugin where
-    initialize c = do
+    initialize = do
         session <- busNew connectSession
         system <- busNew connectSystem
         let busMap = M.fromList [ ("session", session)
                                 , ("system", system)
                                 ]
-        return $ DBusPlugin c busMap
+        return $ DBusPlugin busMap
 
     destroy plugin = forM_ (plugin ^. dbusMap) busDestroy
 
@@ -111,17 +109,16 @@ busHandler plugin = msum [ listenHandler plugin
 listenHandler :: BusReference -> ServerPart DBusPlugin Response
 listenHandler busRef = dir "listen" $ withData $ \matcher -> do
     nullDir
-    index <- look "index"
     clnt <- use $ busRef . busClient
-    host <- use dbusHost
-    listener <- liftIO $ addMatch clnt matcher $ \sig -> callback host index [sig]
+    (callback, index) <- lift newCallback
+    listener <- liftIO $ addMatch clnt matcher $ \sig -> callback [sig]
     busRef . busSignals . at index .= Just listener
     callbackResponse index
 
 stopHandler :: BusReference -> ServerPart DBusPlugin Response
 stopHandler busRef = dir "stop" $ do
     nullDir
-    index <- look "index"
+    index <- fromData
     listener <- use (busRef . busSignals . at index)
     case listener of
         Just l -> do

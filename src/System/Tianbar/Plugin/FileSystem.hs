@@ -10,8 +10,9 @@ import qualified Data.Text as T
 
 import System.Environment.XDG.BaseDir
 
-import System.Tianbar.Plugin
 import System.Tianbar.Configuration
+import System.Tianbar.Plugin
+import System.Tianbar.RequestResponse
 
 import Paths_tianbar
 
@@ -24,7 +25,7 @@ getRootFileName :: String -> IO FilePath
 getRootFileName filePath = return $ "/" ++ filePath
 
 instance Plugin FileSystem where
-    initialize _ = return FileSystem
+    initialize = return FileSystem
 
     handler = msum [ dir "data" $ directoryHandler getDataFileName
                    , dir "user" $ directoryHandler getUserFileName

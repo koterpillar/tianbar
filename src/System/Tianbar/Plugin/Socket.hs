@@ -17,20 +17,16 @@ import Network.Socket
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 
-type SocketMap = M.Map String Socket
+type SocketMap = M.Map CallbackIndex Socket
 
-data SocketPlugin = SocketPlugin { _spHost :: Callbacks
-                                 , _spSock :: SocketMap
+data SocketPlugin = SocketPlugin { _spSock :: SocketMap
                                  }
 
-spHost :: Getter SocketPlugin Callbacks
-spHost inj (SocketPlugin h m) = flip SocketPlugin m <$> inj h
-
 spSock :: Lens' SocketPlugin SocketMap
-spSock inj (SocketPlugin h m) = SocketPlugin h <$> inj m
+spSock inj (SocketPlugin m) = SocketPlugin <$> inj m
 
 instance Plugin SocketPlugin where
-    initialize c = return $ SocketPlugin c M.empty
+    initialize = return $ SocketPlugin M.empty
 
     destroy = mapM_ close . M.elems . view spSock
 
@@ -39,23 +35,23 @@ instance Plugin SocketPlugin where
 connectHandler :: ServerPart SocketPlugin Response
 connectHandler = dir "connect" $ do
     nullDir
-    index <- look "callbackIndex"
     socketPath <- look "path"
     sock <- liftIO $ do
         s <- socket AF_UNIX Stream defaultProtocol
         connect s $ SockAddrUnix socketPath
         return s
-    host <- use spHost
+    (callback, index) <- lift newCallback
     _ <- liftIO $ forkIO $ void $ forever $ do
-        response <- recv sock 4096
-        callback host index [response]
+        sockData <- recv sock 4096
+        liftIO $ callback [sockData]
+        return ()
     spSock . at index .= Just sock
     callbackResponse index
 
 sendHandler :: ServerPart SocketPlugin Response
 sendHandler = dir "send" $ do
     nullDir
-    index <- look "callbackIndex"
+    index <- fromData
     sock <- MaybeT $ getSocket index
     dataToSend <- look "data"
     -- TODO: resend until done
@@ -65,7 +61,7 @@ sendHandler = dir "send" $ do
 closeHandler :: ServerPart SocketPlugin Response
 closeHandler = dir "close" $ do
     nullDir
-    index <- look "callbackIndex"
+    index <- fromData
     sock <- getSocket index
     case sock of
         Nothing -> return ()
@@ -74,5 +70,5 @@ closeHandler = dir "close" $ do
             spSock . at index .= Nothing
     callbackResponse index
 
-getSocket :: MonadState SocketPlugin m => String -> m (Maybe Socket)
+getSocket :: MonadState SocketPlugin m => CallbackIndex -> m (Maybe Socket)
 getSocket callbackIndex = use $ spSock . at callbackIndex
