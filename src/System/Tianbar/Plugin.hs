@@ -83,4 +83,4 @@ runPlugin :: (Plugin p, MonadIO m) => p -> URI -> Callbacks -> m ((Maybe Respons
 runPlugin = runHandler handler
 
 newCallback :: ToJSON r => ServerPart p (Callback r, CallbackIndex)
-newCallback = lift $ lift $ lift $ newCallbackT
+newCallback = lift $ lift $ lift newCallbackT
