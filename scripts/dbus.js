@@ -24,11 +24,11 @@ define(['jquery', './tianbar'], function ($, tianbar) {
       listen: function (match) {
         var data = {};
         copyProperties(['path', 'iface', 'member'], match, data);
-        return $.ajax('tianbar:///dbus/' + busName + '/listen').
-          then(tianbar.createEvent).
-          then(function (evt) {
-            return evt.callback;
-          });
+        return $.ajax('tianbar:///dbus/' + busName + '/listen', {
+          data: data
+        }).then(tianbar.createEvent).then(function (evt) {
+          return evt.callback;
+        });
       },
 
       /**
