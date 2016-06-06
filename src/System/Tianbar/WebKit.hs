@@ -59,11 +59,7 @@ tianbarWebView = do
 
     -- Initialize plugins, and re-initialize on reloads
     server <- startServer wk >>= newMVar
-    _ <- onWebViewLoadChanged wk $
-        \event -> when (event == LoadEventStarted) $
-            modifyMVar_ server $ \oldServer -> do
-                stopServer oldServer
-                startServer wk
+    -- TODO: Destroy server (stopServer) on destroying the WebView
 
     -- All Tianbar plugins are served under tianbar://, allow it for CORS and
     -- register its handler
