@@ -22,7 +22,6 @@ import GI.GLib.Functions hiding (getUserConfigDir)
 import GI.Gtk hiding (main)
 
 import GI.WebKit2.Callbacks
-import GI.WebKit2.Enums
 import GI.WebKit2.Interfaces.PermissionRequest (permissionRequestAllow)
 import GI.WebKit2.Objects.SecurityManager
 import GI.WebKit2.Objects.Settings
@@ -72,7 +71,8 @@ tianbarWebView = do
     _ <- onWebViewCreate wk $ \_ -> do
         nwk <- tianbarWebView
 
-        window <- windowNew WindowTypePopup
+        window <- windowNew WindowTypeToplevel
+        windowSetDecorated window False
         containerAdd window nwk
 
         _ <- onWebViewReadyToShow nwk $ do
