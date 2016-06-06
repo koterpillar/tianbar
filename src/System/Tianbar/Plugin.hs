@@ -11,6 +11,7 @@ module System.Tianbar.Plugin (
     dir,
     look,
     looks,
+    newCallback,
     nullDir,
     parseURI,
     path,
@@ -27,29 +28,26 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Maybe
 
+import Data.Aeson
 import qualified Data.Text as T
 
 import System.Tianbar.Callbacks
 import System.Tianbar.RequestResponse
 
-type ServerPart s t = MaybeT (CallbacksT (ReaderT URI (StateT s IO))) t
+type ServerPart s t = MaybeT (StateT s (ReaderT URI (StateT Callbacks IO))) t
 
-runHandler :: (MonadIO m, CallbackHost h) => ServerPart p t -> p -> URI -> h -> m (Maybe t, p)
-runHandler h p uri host = liftIO $ runStateT (runReaderT (runCallbacks host (runMaybeT h)) uri) p
+runHandler :: MonadIO m => ServerPart p t -> p -> URI -> Callbacks -> m ((Maybe t, p), Callbacks)
+runHandler h p uri cb = liftIO $ runStateT (runReaderT (runStateT (runMaybeT h) p) uri) cb
 
 runWithLens :: L.Lens' p q -> ServerPart q Response -> ServerPart p Response
-runWithLens l h' = MaybeT $ runCallbacksWith (runReaderWithLens l) (runMaybeT h')
-    where runReaderWithLens :: L.Lens' p q -> forall a b. ReaderT b (StateT q IO) a -> ReaderT b (StateT p IO) a
-          runReaderWithLens l' r = ReaderT $ \u -> do
-              s <- L.use l'
-              (res, s') <- lift $ runStateT (runReaderT r u) s
-              L.assign l' s'
-              return res
+runWithLens l = mapMaybeT $ \act -> do
+    p <- L.use l
+    (res, p') <- lift $ runStateT act p
+    L.assign l p'
+    return res
 
 runWithUri :: URI -> ServerPart p t -> ServerPart p t
-runWithUri uri' h = MaybeT $ runCallbacksWith (replaceInput uri') (runMaybeT h)
-    where replaceInput :: b -> forall a. ReaderT b m a -> ReaderT b m a
-          replaceInput inp' r = ReaderT $ \_ -> runReaderT r inp'
+runWithUri uri = mapMaybeT $ mapStateT $ local $ const uri
 
 path :: (String -> ServerPart p t) -> ServerPart p t
 path h = do
@@ -81,5 +79,8 @@ class Plugin p where
 
     handler :: ServerPart p Response
 
-runPlugin :: (Plugin p, MonadIO m, CallbackHost h) => p -> URI -> h -> m (Maybe Response, p)
+runPlugin :: (Plugin p, MonadIO m) => p -> URI -> Callbacks -> m ((Maybe Response, p), Callbacks)
 runPlugin = runHandler handler
+
+newCallback :: ToJSON r => ServerPart p (Callback r, CallbackIndex)
+newCallback = lift $ lift $ lift $ newCallbackT

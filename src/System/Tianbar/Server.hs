@@ -9,25 +9,26 @@ module System.Tianbar.Server (
 
 import Control.Concurrent
 
-import Data.Tuple
-
 import GI.WebKit2.Objects.WebView
 
+import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 import System.Tianbar.Plugin.All
 
-data Server = Server { serverHost :: WebView
-                     , serverPlugins :: MVar AllPlugins }
+newtype Server = Server { serverState :: MVar (Callbacks, AllPlugins) }
 
 startServer :: WebView -> IO Server
 startServer wk = do
     plugins <- initialize
-    pluginsVar <- newMVar plugins
-    return $ Server wk pluginsVar
+    pluginsVar <- newMVar (callbacks wk, plugins)
+    return $ Server pluginsVar
 
 handleURI ::  Server -> URI -> IO (Maybe Response)
-handleURI server uri = modifyMVar (serverPlugins server) $
-    fmap swap . \p -> runPlugin p uri (serverHost server)
+handleURI server uri = modifyMVar (serverState server) $ \(cb, plugins) -> do
+    ((resp, plugins'), cb') <- runPlugin plugins uri cb
+    return ((cb', plugins'), resp)
 
 stopServer :: Server -> IO ()
-stopServer server = takeMVar (serverPlugins server) >>= destroy
+stopServer server = do
+    (_, plugins) <- takeMVar $ serverState server
+    destroy plugins

@@ -40,7 +40,7 @@ connectHandler = dir "connect" $ do
         s <- socket AF_UNIX Stream defaultProtocol
         connect s $ SockAddrUnix socketPath
         return s
-    (callback, index) <- lift newCallback
+    (callback, index) <- newCallback
     _ <- liftIO $ forkIO $ void $ forever $ do
         sockData <- recv sock 4096
         liftIO $ callback [sockData]

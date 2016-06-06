@@ -7,7 +7,6 @@ import Control.Lens hiding (index)
 
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 
 import qualified Data.Map as M
@@ -110,7 +109,7 @@ listenHandler :: BusReference -> ServerPart DBusPlugin Response
 listenHandler busRef = dir "listen" $ withData $ \matcher -> do
     nullDir
     clnt <- use $ busRef . busClient
-    (callback, index) <- lift newCallback
+    (callback, index) <- newCallback
     listener <- liftIO $ addMatch clnt matcher $ \sig -> callback [sig]
     busRef . busSignals . at index .= Just listener
     callbackResponse index

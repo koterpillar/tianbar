@@ -1,26 +1,19 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 module System.Tianbar.Callbacks (
     Callback,
+    Callbacks,
     CallbackIndex,
     CallbackHost,
-    CallbacksT,
+    callbacks,
     callbackResponse,
-    newCallback,
-    runCallbacks,
-    runCallbacksWith,
+    newCallbackT,
 ) where
 
-import Control.Applicative
-
-import Control.Arrow (second)
+import Control.Lens hiding ((.=))
 
 import Control.Monad
-import Control.Monad.Reader
 import Control.Monad.State
 
 import Data.Aeson
@@ -47,86 +40,52 @@ instance FromData CallbackIndex where
           Just idx -> return $ CallbackIndex idx
           Nothing -> mzero
 
-type Callback p = p -> IO ()
+type Callback r = r -> IO ()
 
 class CallbackHost h where
-    callback :: (ToJSON i, ToJSON p) => h -> i -> Callback p
+    callback :: (ToJSON i, ToJSON r) => h -> i -> Callback r
 
 {- FIXME: Move to WebKit -}
 instance CallbackHost WebView where
-    callback wk index param =
+    callback wk idx param =
         webViewRunJavascript wk
-            (TL.toStrict $ callbackScript index param)
+            (TL.toStrict $ callbackScript idx param)
             noCancellable
             Nothing
 
-callbackScript :: (ToJSON i, ToJSON p) => i -> p -> TL.Text
-callbackScript index param =
+callbackScript :: (ToJSON i, ToJSON r) => i -> r -> TL.Text
+callbackScript idx param =
     "window.tianbarEvents && " <> eventStr <> " && "
         <> eventStr <> ".fire.apply(" <> eventStr <> ", " <> paramStr <> ")"
     where eventStr = "window.tianbarEvents[" <> indexStr <> "]"
-          indexStr = showJSON index
+          indexStr = showJSON idx
           paramStr = showJSON param
 
 showJSON :: ToJSON a => a -> TL.Text
 showJSON = E.decodeUtf8 . encode
 {- FIXME: end Move to WebKit -}
 
-data CallbacksT m a = CallbacksT { runCallbacksT :: forall h. CallbackHost h => h -> Int -> m (a, Int) }
+type CallbackHostFunc = Int -> Callback Value
 
-instance (Functor m) => Functor (CallbacksT m) where
-    fmap f m = CallbacksT $ \h s ->
-        fmap (\ ~(a, s') -> (f a, s')) $ runCallbacksT m h s
-    {-# INLINE fmap #-}
+data Callbacks = Callbacks { _cbHost :: CallbackHostFunc
+                           , _cbNextIndex :: Int
+                           }
 
-instance (Functor m, Monad m) => Applicative (CallbacksT m) where
-    pure a = CallbacksT $ \_ s -> return (a, s)
-    {-# INLINE pure #-}
-    CallbacksT mf <*> CallbacksT mx = CallbacksT $ \h s -> do
-        ~(f, s') <- mf h s
-        ~(x, s'') <- mx h s'
-        return (f x, s'')
-    {-# INLINE (<*>) #-}
+cbHost :: Getter Callbacks CallbackHostFunc
+cbHost inj (Callbacks h i) = flip Callbacks i <$> inj h
 
-instance (Functor m, MonadPlus m) => Alternative (CallbacksT m) where
-    empty = CallbacksT $ \_ _ -> mzero
-    {-# INLINE empty #-}
-    CallbacksT m <|> CallbacksT n = CallbacksT $ \h s -> m h s `mplus` n h s
-    {-# INLINE (<|>) #-}
+cbNextIndex :: Lens' Callbacks Int
+cbNextIndex inj (Callbacks h i) = Callbacks h <$> inj i
 
-instance (Monad m) => Monad (CallbacksT m) where
-    a >>= b = CallbacksT $ \h i -> do
-        (ra, i') <- runCallbacksT a h i
-        runCallbacksT (b ra) h i'
-    return a = CallbacksT $ \_ i -> return (a, i)
-    {-# INLINE return #-}
-
-instance MonadTrans CallbacksT where
-    lift act = CallbacksT $ \_ n -> liftM (,n) act
-
-instance MonadState s m => MonadState s (CallbacksT m) where
-    get = lift get
-    put v = lift $ put v
-
-instance MonadReader s m => MonadReader s (CallbacksT m) where
-    ask = lift ask
-    local f act = CallbacksT $ \h i -> local f $ runCallbacksT act h i
-
-instance MonadIO m => MonadIO (CallbacksT m) where
-    liftIO = lift . liftIO
-
-runCallbacks :: (Monad m, CallbackHost h) => h -> CallbacksT m a -> m (a, CallbackIndex)
-runCallbacks = runCallbacksFrom (CallbackIndex 0)
-
-runCallbacksFrom :: (Monad m, CallbackHost h) => CallbackIndex -> h -> CallbacksT m a -> m (a, CallbackIndex)
-runCallbacksFrom (CallbackIndex start) h cb = liftM (second CallbackIndex) $ runCallbacksT cb h start
-
-runCallbacksWith :: (Monad m, Monad m') => (forall a. m a -> m' a) -> CallbacksT m b -> CallbacksT m' b
-runCallbacksWith lft cb = CallbacksT $ \h n -> lft $ runCallbacksT cb h n
+callbacks :: CallbackHost h => h -> Callbacks
+callbacks h = Callbacks (callback h) 0
 
 callbackResponse :: Monad m => CallbackIndex -> m Response
 callbackResponse (CallbackIndex idx) = jsonResponse $ object [ "callbackIndex" .= show idx ]
 
-newCallback :: (Monad m, ToJSON p) => CallbacksT m (Callback p, CallbackIndex)
-newCallback = CallbacksT $ \h i ->
-    return ((callback h i, CallbackIndex i), i + 1)
+newCallbackT :: (MonadState Callbacks m, ToJSON r) => m (Callback r, CallbackIndex)
+newCallbackT = do
+    host <- use cbHost
+    newIndex <- use cbNextIndex
+    cbNextIndex += 1
+    return (host newIndex . toJSON, CallbackIndex newIndex)
