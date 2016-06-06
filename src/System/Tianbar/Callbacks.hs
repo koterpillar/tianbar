@@ -45,7 +45,6 @@ type Callback r = r -> IO ()
 class CallbackHost h where
     callback :: (ToJSON i, ToJSON r) => h -> i -> Callback r
 
-{- FIXME: Move to WebKit -}
 instance CallbackHost WebView where
     callback wk idx param =
         webViewRunJavascript wk
@@ -63,7 +62,6 @@ callbackScript idx param =
 
 showJSON :: ToJSON a => a -> TL.Text
 showJSON = E.decodeUtf8 . encode
-{- FIXME: end Move to WebKit -}
 
 type CallbackHostFunc = Int -> Callback Value
 
