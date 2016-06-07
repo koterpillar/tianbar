@@ -5,7 +5,7 @@ Tianbar is a status bar for XMonad and possibly similar window managers. It is
 using WebKit as its rendering engine, meaning that the entire look and feel is
 customizable using HTML, CSS and JavaScript.
 
-![Screenshot - left part](tianbar.png) ![Screenshot - right part](tianbar2.png)
+![Screenshot](tianbar.png)
 
 Usage
 -----
@@ -21,6 +21,10 @@ with Tianbar.
 
 For an example of RequireJS configuration, see the
 [example index.html](index.html).
+
+### IBus
+
+Displays the status of IBus input method.
 
 ### Power
 

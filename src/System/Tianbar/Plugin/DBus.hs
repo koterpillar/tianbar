@@ -1,95 +1,135 @@
+{-# LANGUAGE RankNTypes #-}
 module System.Tianbar.Plugin.DBus (DBusPlugin) where
 
 -- DBus connectivity
 
-import Control.Applicative
-import Control.Concurrent
+import Control.Lens hiding (index)
+
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Maybe
 
-import Data.Aeson (encode)
 import qualified Data.Map as M
 
-import Happstack.Server
-
-import DBus.Client
+import DBus (parseAddress)
+import DBus.Client ( Client
+                   , SignalHandler
+                   , addMatch
+                   , call
+                   , connect
+                   , connectSystem
+                   , connectSession
+                   , disconnect
+                   , removeMatch
+                   )
 
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 import System.Tianbar.Plugin.DBus.JSON ()
 import System.Tianbar.Plugin.DBus.FromData ()
+import System.Tianbar.RequestResponse
 
-data Bus = Bus { busClient :: Client
-               , busSignals :: MVar (M.Map String SignalHandler)
+
+type SignalMap = M.Map CallbackIndex SignalHandler
+
+data Bus = Bus { _busClient :: Client
+               , _busSignals :: SignalMap
                }
 
+busClient :: Getter Bus Client
+busClient inj (Bus c s) = flip Bus s <$> inj c
+
+busSignals :: Lens' Bus SignalMap
+busSignals inj (Bus c s) = Bus c <$> inj s
+
 busNew :: IO Client -> IO Bus
-busNew conn = Bus <$> conn <*> newMVar M.empty
+busNew conn = Bus <$> conn <*> pure M.empty
 
 busDestroy :: Bus -> IO ()
--- TODO: remove signals?
-busDestroy = disconnect . busClient
+busDestroy bus = do
+    let clnt = bus ^. busClient
+    forM_ (bus ^. busSignals) $ removeMatch clnt
+    disconnect clnt
 
-busAddListener :: (MonadIO m) => Bus -> String -> SignalHandler -> m ()
-busAddListener bus index listener = liftIO $ modifyMVar_ (busSignals bus) $ \listeners ->
-    return $ M.insert index listener listeners
+type BusMap = M.Map String Bus
 
-busPopListener :: (MonadIO m) => Bus -> String -> m (Maybe SignalHandler)
-busPopListener bus index = liftIO $ modifyMVar (busSignals bus) $ \listeners -> do
-    let listener = M.lookup index listeners
-    let listeners' = M.delete index listeners
-    return (listeners', listener)
-
-data DBusPlugin = DBusPlugin { dbusHost :: Callbacks
-                             , dbusSession :: Bus
-                             , dbusSystem :: Bus
+data DBusPlugin = DBusPlugin { _dbusMap :: BusMap
                              }
 
-busNameMap :: [(String, DBusPlugin -> Bus)]
-busNameMap = [ ("session", dbusSession)
-             , ("system", dbusSystem)
-             ]
+dbusMap :: Lens' DBusPlugin BusMap
+dbusMap inj (DBusPlugin m) = DBusPlugin <$> inj m
 
 instance Plugin DBusPlugin where
-    initialize c = do
+    initialize = do
         session <- busNew connectSession
         system <- busNew connectSystem
-        return $ DBusPlugin c session system
+        let busMap = M.fromList [ ("session", session)
+                                , ("system", system)
+                                ]
+        return $ DBusPlugin busMap
 
-    destroy plugin = mapM_ busDestroy [dbusSession plugin, dbusSystem plugin]
+    destroy plugin = forM_ (plugin ^. dbusMap) busDestroy
 
-    handler plugin = dir "dbus" $ msum [ busHandler plugin busName (bus plugin)
-                                       | (busName, bus) <- busNameMap
-                                       ]
+    handler = dir "dbus" $ msum [ busesHandler
+                                , connectBusHandler
+                                ]
 
-busHandler :: DBusPlugin -> String -> Bus -> ServerPartT IO Response
-busHandler plugin busName bus = dir busName $ msum [ mzero
-                                                   , listenHandler plugin bus
-                                                   , stopHandler plugin bus
-                                                   , callHandler plugin bus
-                                                   ]
-
-listenHandler :: DBusPlugin -> Bus -> ServerPartT IO Response
-listenHandler plugin bus = dir "listen" $ withData $ \matcher -> do
+connectBusHandler :: ServerPart DBusPlugin Response
+connectBusHandler = dir "connect" $ do
     nullDir
-    index <- look "index"
-    listener <- liftIO $ addMatch (busClient bus) matcher $ \sig -> callback (dbusHost plugin) index [sig]
-    busAddListener bus index listener
-    return $ toResponse ("ok" :: String)
+    name <- look "name"
+    addressStr <- look "address"
+    address <- MaybeT $ return $ parseAddress addressStr
+    bus <- liftIO $ busNew $ connect address
+    dbusMap . at name .= Just bus
+    okResponse
 
-stopHandler :: DBusPlugin -> Bus -> ServerPartT IO Response
-stopHandler _ bus = dir "stop" $ do
+type BusReference = Lens' DBusPlugin Bus
+
+unsafeMaybeLens :: Lens' (Maybe a) a
+unsafeMaybeLens inj (Just v) = Just <$> inj v
+unsafeMaybeLens _ Nothing = error "unsafeMaybeLens applied to Nothing"
+
+busesHandler :: ServerPart DBusPlugin Response
+busesHandler = path $ \busName -> do
+    let busRef :: Lens' DBusPlugin (Maybe Bus)
+        busRef = dbusMap . at busName
+    bus <- use busRef
+    case bus of
+      Just _ -> busHandler $ busRef . unsafeMaybeLens
+      Nothing -> mzero
+
+busHandler :: BusReference -> ServerPart DBusPlugin Response
+busHandler plugin = msum [ listenHandler plugin
+                         , stopHandler plugin
+                         , callHandler plugin
+                         ]
+
+listenHandler :: BusReference -> ServerPart DBusPlugin Response
+listenHandler busRef = dir "listen" $ withData $ \matcher -> do
     nullDir
-    index <- look "index"
-    listener <- busPopListener bus index
+    clnt <- use $ busRef . busClient
+    (callback, index) <- newCallback
+    listener <- liftIO $ addMatch clnt matcher $ \sig -> callback [sig]
+    busRef . busSignals . at index .= Just listener
+    callbackResponse index
+
+stopHandler :: BusReference -> ServerPart DBusPlugin Response
+stopHandler busRef = dir "stop" $ do
+    nullDir
+    index <- fromData
+    listener <- use (busRef . busSignals . at index)
     case listener of
         Just l -> do
-            liftIO $ removeMatch (busClient bus) l
-            return $ toResponse ("ok" :: String)
+            busRef . busSignals . at index .= Nothing
+            clnt <- use $ busRef . busClient
+            liftIO $ removeMatch clnt l
+            callbackResponse index
         Nothing -> mzero
 
-callHandler :: DBusPlugin -> Bus -> ServerPartT IO Response
-callHandler _ bus = dir "call" $ withData $ \mcall -> do
+callHandler :: BusReference -> ServerPart DBusPlugin Response
+callHandler busRef = dir "call" $ withData $ \mcall -> do
     nullDir
-    res <- liftIO $ call (busClient bus) mcall
-    return $ toResponse $ encode res
+    clnt <- use $ busRef . busClient
+    res <- liftIO $ call clnt mcall
+    jsonResponse res

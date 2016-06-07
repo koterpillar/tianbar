@@ -14,14 +14,18 @@ define(['jquery', './dbus'], function ($, dbus) {
   "use strict";
   var change = $.Callbacks();
 
-  dbus.session.listen({
-    path: '/org/xmonad/Log',
-    iface: 'org.xmonad.Log',
-    member: 'Update'
-  }).add(function (ev) {
-    var st = ev.body[0];
-    $('.widget-xmonad').html(st);
-    change.fire(st);
+  $(document).ready(function () {
+    dbus.session.listen({
+      path: '/org/xmonad/Log',
+      iface: 'org.xmonad.Log',
+      member: 'Update'
+    }).then(function (evt) {
+      evt.add(function (ev) {
+        var st = ev.body[0];
+        $('.widget-xmonad').html(st);
+        change.fire(st);
+      });
+    });
   });
 
   return {

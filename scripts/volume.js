@@ -15,16 +15,27 @@ define(['jquery', './socket'], function ($, socket) {
 
   var WAVES = 5;
 
+  var self = {};
+
+  self.settings_command = 'gnome-control-center sound &';
+
   function uid() {
-    return $.ajax('/proc/self/status')
+    return $.ajax('tianbar:///root/proc/self/status')
     .then(function (result) {
       return +UID_RE.exec(result)[1];
     });
   }
 
-  uid().then(function (uid) {
+  $.when(
+    $.ajax('tianbar:///execute', {
+      data: {
+        command: 'pacmd load-module module-cli-protocol-unix'
+      }
+    }),
+    uid()
+  ).then(function (_, uid) {
     return socket('/var/run/user/' + uid + '/pulse/cli');
-  }).done(function (pulseSocket) {
+  }).then(function (pulseSocket) {
     pulseSocket.recv.add(function (dump) {
       var mute = MUTE_RE.exec(dump)[1] === "yes";
       var volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
@@ -77,6 +88,14 @@ define(['jquery', './socket'], function ($, socket) {
       widget.attr('title', percentage + '%');
 
       window.setTimeout(requestDump, 1000);
+
+      widget.click(function () {
+        $.ajax('tianbar:///execute', {
+          data: {
+            command: 'gnome-control-center sound &'
+          }
+        });
+      });
     });
 
     function requestDump () {
@@ -85,4 +104,6 @@ define(['jquery', './socket'], function ($, socket) {
 
     requestDump();
   });
+
+  return self;
 });

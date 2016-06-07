@@ -1,69 +1,34 @@
 module System.Tianbar.Server (
-    Server (..),
-    startServer
+    Server,
+    handleURI,
+    startServer,
+    stopServer,
 ) where
 
 -- Server to handle JS callbacks
 
 import Control.Concurrent
-import Control.Monad
 
-import Happstack.Server
-
-import Network.Socket
-import Network.URI
-
-import System.Random
+import GI.WebKit2.Objects.WebView
 
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
-import System.Tianbar.Plugin.Combined
-import System.Tianbar.Plugin.DataDirectory
-import System.Tianbar.Plugin.DBus
-import System.Tianbar.Plugin.GSettings
-import System.Tianbar.Plugin.Socket
+import System.Tianbar.Plugin.All
 
-data Server = Server { serverOverrideURI :: URI -> URI
-                     , stopServer :: IO ()
-                     }
+newtype Server = Server { serverState :: MVar (Callbacks, AllPlugins) }
 
-localhost :: String
-localhost = "127.0.0.1"
+startServer :: WebView -> IO Server
+startServer wk = do
+    plugins <- initialize
+    pluginsVar <- newMVar (callbacks wk, plugins)
+    return $ Server pluginsVar
 
-startServer :: Callbacks -> IO Server
-startServer c = do
-    sock <- bindIPv4 localhost $ fromIntegral aNY_PORT
-    prefix <- replicateM 20 $ randomRIO ('a', 'z')
-    plugins <- initialize c :: IO AllPlugins
-    thread <- forkIO $ runServer sock prefix plugins
-    portNum <- socketPort sock
-    return $ Server (handleURI portNum prefix) (killServer thread plugins)
+handleURI ::  Server -> URI -> IO (Maybe Response)
+handleURI server uri = modifyMVar (serverState server) $ \(cb, plugins) -> do
+    ((resp, plugins'), cb') <- runPlugin plugins uri cb
+    return ((cb', plugins'), resp)
 
-type AllPlugins =
-    Combined DataDirectory (
-        Combined DBusPlugin (
-            Combined GSettings (
-                Combined SocketPlugin (
-                    Combined Empty Empty))))
-
-runServer :: Plugin p => Socket -> String -> p -> IO ()
-runServer sock prefix plugin = do
-    portNum <- socketPort sock
-    let conf = nullConf { port = fromIntegral portNum }
-    simpleHTTPWithSocket sock conf $ dir prefix $ handler plugin
-
-killServer :: Plugin p => ThreadId -> p -> IO ()
-killServer thread p = do
-    destroy p
-    killThread thread
-
-handleURI :: PortNumber -> String -> URI -> URI
-handleURI portNum prefix uri | uriScheme uri == "tianbar:" = uri'
-                             | otherwise = uri
-    where uri' = uri { uriScheme = "http:"
-                     , uriAuthority = Just URIAuth { uriUserInfo = ""
-                                                   , uriRegName = localhost
-                                                   , uriPort = ':' : show portNum
-                                                   }
-                     , uriPath = "/" ++ prefix ++ uriPath uri
-                     }
+stopServer :: Server -> IO ()
+stopServer server = do
+    (_, plugins) <- takeMVar $ serverState server
+    destroy plugins

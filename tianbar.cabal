@@ -1,5 +1,5 @@
 name:                tianbar
-version:             0.4.8.0
+version:             1.0.0.0
 synopsis:            A desktop bar based on WebKit
 description:
   A desktop bar using WebKit for rendering as much as possible.
@@ -15,6 +15,7 @@ cabal-version:       >=1.10
 data-files:          README.md
                    , index.html
                    , scripts/dbus.js
+                   , scripts/ibus.js
                    , scripts/power.js
                    , scripts/socket.js
                    , scripts/tianbar.js
@@ -29,23 +30,31 @@ data-files:          README.md
 executable tianbar
   default-language:    Haskell2010
   build-depends:       base >3 && <5
-                     , aeson >=0.6
-                     , containers >=0.5
-                     , directory >=1.2
-                     , dbus >=0.10.10
-                     , gtk >=0.12
-                     , gtk-traymanager >=0.1
-                     , happstack-server >= 7.3
-                     , network >=2.6
-                     , network-uri >=2.6
-                     , process >=1.2
-                     , random >=1.0
-                     , split >=0.2
-                     , text >=0.11
-                     , transformers >=0.3
-                     , webkit >=0.12.6.1
-                     , xdg-basedir >=0.2
-  pkgconfig-depends:   gtk+-2.0
+                     , aeson
+                     , bytestring
+                     , containers
+                     , directory
+                     , dbus
+                     , filepath
+                     , haskell-gi-base
+                     , http-types
+                     , gi-gdk
+                     , gi-gio
+                     , gi-glib
+                     , gi-gtk
+                     , gi-webkit2
+                     , lens
+                     , mime-types
+                     , mtl
+                     , network
+                     , process
+                     , random
+                     , split
+                     , text
+                     , transformers
+                     , utf8-string
+                     , xdg-basedir
+  pkgconfig-depends:   gtk+-3.0
   hs-source-dirs:      src
   main-is:             Main.hs
   other-modules:       System.Tianbar
@@ -53,18 +62,18 @@ executable tianbar
                      , System.Tianbar.Configuration
                      , System.Tianbar.Server
                      , System.Tianbar.StrutProperties
-                     , System.Tianbar.Systray
                      , System.Tianbar.Plugin
+                     , System.Tianbar.Plugin.All
                      , System.Tianbar.Plugin.Combined
-                     , System.Tianbar.Plugin.DataDirectory
+                     , System.Tianbar.Plugin.FileSystem
+                     , System.Tianbar.Plugin.ExecuteCommand
                      , System.Tianbar.Plugin.DBus
                      , System.Tianbar.Plugin.DBus.FromData
                      , System.Tianbar.Plugin.DBus.JSON
                      , System.Tianbar.Plugin.GSettings
                      , System.Tianbar.Plugin.Socket
-                     , System.Tianbar.Utils
+                     , System.Tianbar.RequestResponse
                      , System.Tianbar.WebKit
-  c-sources:           src/gdk_property_change_wrapper.c
   ghc-options:         -Wall -rtsopts -threaded
 
 library
@@ -73,9 +82,9 @@ library
                      , dbus
                      , xmonad
                      , xmonad-contrib
-                     , utf8-string >=0.3
-                     , blaze-html >=0.5
-                     , blaze-markup >=0.5
+                     , utf8-string
+                     , blaze-html
+                     , blaze-markup
   hs-source-dirs:      src
   exposed-modules:     System.Tianbar.XMonadLog
   ghc-options:         -Wall -rtsopts

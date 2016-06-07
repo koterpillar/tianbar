@@ -82,9 +82,11 @@ define(['jquery', 'moment'], function ($, moment) {
       forecastWindow = window.open('about:blank', 'forecast',
         [
           'left=' + offset.left,
-          'top=' + offset.top,
+          'top=' + $(window).height(),
+          'width=200',
+          'height=200',
           ''
-        ].join(';'));
+        ].join(','));
     } else {
       forecastWindow.close();
     }

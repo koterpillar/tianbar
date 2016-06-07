@@ -1,19 +1,27 @@
+{-# LANGUAGE RankNTypes #-}
 module System.Tianbar.Plugin.Combined where
 
-import Control.Applicative
+import Control.Lens
+
 import Control.Monad
 
 import System.Tianbar.Plugin
 
 data Combined p q = Combined p q
 
+combined1 :: Lens' (Combined p q) p
+combined1 inj (Combined p q) = flip Combined q <$> inj p
+
+combined2 :: Lens' (Combined p q) q
+combined2 inj (Combined p q) = Combined p <$> inj q
+
 instance (Plugin p, Plugin q) => Plugin (Combined p q) where
-    initialize wk = Combined <$> initialize wk <*> initialize wk
+    initialize = Combined <$> initialize <*> initialize
     destroy (Combined p q) = destroy p >> destroy q
-    handler (Combined p q) = handler p `mplus` handler q
+    handler = runWithLens combined1 handler `mplus` runWithLens combined2 handler
 
-data Empty = Empty
+data EmptyPlugin = EmptyPlugin
 
-instance Plugin Empty where
-    initialize _ = return Empty
-    handler _ = mzero
+instance Plugin EmptyPlugin where
+    initialize = return EmptyPlugin
+    handler = mzero

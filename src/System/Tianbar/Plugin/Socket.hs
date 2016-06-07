@@ -1,71 +1,74 @@
+{-# LANGUAGE FlexibleContexts #-}
 module System.Tianbar.Plugin.Socket where
 
 -- Socket connectivity
 
 import Control.Concurrent
+import Control.Lens hiding (index)
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.State
+import Control.Monad.Trans.Maybe
 
 import qualified Data.Map as M
-
-import Happstack.Server
 
 import Network.Socket
 
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
 
-data SocketPlugin = SocketPlugin { spHost :: Callbacks
-                                 , spSock :: MVar (M.Map String Socket)
+type SocketMap = M.Map CallbackIndex Socket
+
+data SocketPlugin = SocketPlugin { _spSock :: SocketMap
                                  }
 
+spSock :: Lens' SocketPlugin SocketMap
+spSock inj (SocketPlugin m) = SocketPlugin <$> inj m
+
 instance Plugin SocketPlugin where
-    initialize c = do
-        socks <- newMVar M.empty
-        return $ SocketPlugin c socks
+    initialize = return $ SocketPlugin M.empty
 
-    destroy sp = withMVar (spSock sp) $ mapM_ close . M.elems
+    destroy = mapM_ close . M.elems . view spSock
 
-    handler plugin = dir "socket" $ msum $ map (\act -> act plugin) acts
-        where acts = [connectHandler, sendHandler, closeHandler]
+    handler = dir "socket" $ msum [connectHandler, sendHandler, closeHandler]
 
-connectHandler :: SocketPlugin -> ServerPartT IO Response
-connectHandler sp = dir "connect" $ do
+connectHandler :: ServerPart SocketPlugin Response
+connectHandler = dir "connect" $ do
     nullDir
-    callbackIndex <- look "callbackIndex"
     socketPath <- look "path"
     sock <- liftIO $ do
         s <- socket AF_UNIX Stream defaultProtocol
         connect s $ SockAddrUnix socketPath
         return s
+    (callback, index) <- newCallback
     _ <- liftIO $ forkIO $ void $ forever $ do
-        response <- recv sock 4096
-        callback (spHost sp) callbackIndex [response]
-    liftIO $ modifyMVar_ (spSock sp) $ return . M.insert callbackIndex sock
-    return $ toResponse "ok"
+        sockData <- recv sock 4096
+        liftIO $ callback [sockData]
+        return ()
+    spSock . at index .= Just sock
+    callbackResponse index
 
-sendHandler :: SocketPlugin -> ServerPartT IO Response
-sendHandler sp = dir "send" $ do
+sendHandler :: ServerPart SocketPlugin Response
+sendHandler = dir "send" $ do
     nullDir
-    callbackIndex <- look "callbackIndex"
-    -- TODO: Maybe
-    Just sock <- withSocket sp callbackIndex
+    index <- fromData
+    sock <- MaybeT $ getSocket index
     dataToSend <- look "data"
     -- TODO: resend until done
     _ <- liftIO $ send sock dataToSend
-    return $ toResponse "ok"
+    callbackResponse index
 
-closeHandler :: SocketPlugin -> ServerPartT IO Response
-closeHandler sp = dir "close" $ do
+closeHandler :: ServerPart SocketPlugin Response
+closeHandler = dir "close" $ do
     nullDir
-    callbackIndex <- look "callbackIndex"
-    sock <- withSocket sp callbackIndex
+    index <- fromData
+    sock <- getSocket index
     case sock of
         Nothing -> return ()
-        Just sock' -> liftIO $ do
-            close sock'
-            modifyMVar_ (spSock sp) $ return . M.delete callbackIndex
-    return $ toResponse "ok"
+        Just sock' -> do
+            liftIO $ close sock'
+            spSock . at index .= Nothing
+    callbackResponse index
 
-withSocket :: MonadIO m => SocketPlugin -> String -> m (Maybe Socket)
-withSocket sp callbackIndex = liftIO $ withMVar (spSock sp) $ return . M.lookup callbackIndex
+getSocket :: MonadState SocketPlugin m => CallbackIndex -> m (Maybe Socket)
+getSocket callbackIndex = use $ spSock . at callbackIndex

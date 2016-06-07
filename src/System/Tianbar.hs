@@ -1,48 +1,65 @@
 module System.Tianbar where
 
-import Graphics.UI.Gtk hiding (Signal)
+import qualified Data.Text as T
+
+import GI.Gdk.Enums hiding (WindowTypeToplevel)
+import GI.Gdk.Objects.Display
+import GI.Gdk.Objects.Screen
+import GI.Gdk.Structs.Rectangle
+
+import GI.Gtk.Enums
+import qualified GI.Gtk.Functions as GtkFunctions
+import GI.Gtk.Objects.Box
+import GI.Gtk.Objects.Container
+import GI.Gtk.Objects.Widget
+import GI.Gtk.Objects.Window
+
+import System.Environment (getArgs, getProgName)
 
 import System.Tianbar.Configuration
-import System.Tianbar.Systray
 import System.Tianbar.StrutProperties
 import System.Tianbar.WebKit
 
-topStrut :: Rectangle -> StrutProperties
-topStrut (Rectangle mX mY mW _) = (0, 0, h, 0, 0, 0, 0, 0, x, x + w, 0, 0)
-    where x = mX
-          w = mW - 1
-          h = barHeight + mY
+topStrut :: Rectangle -> IO StrutProperties
+topStrut rect = do
+    mX <- rectangleReadX rect
+    mY <- rectangleReadY rect
+    mW <- rectangleReadWidth rect
+    let x = fromIntegral mX
+        w = fromIntegral mW - 1
+        h = barHeight + fromIntegral mY
+     in return (0, 0, h, 0, 0, 0, 0, 0, x, x + w, 0, 0)
 
 main :: IO ()
 main = do
-    _ <- initGUI
+    progName <- getProgName
+    args <- getArgs
+    _ <- GtkFunctions.init $ Just $ map T.pack (progName : args)
 
     Just disp <- displayGetDefault
-    screen <- displayGetScreen disp myScreen
-    monitorSize <- screenGetMonitorGeometry screen myMonitor
+    screen <- displayGetDefaultScreen disp
+    monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
 
-    window <- windowNew
-    widgetSetName window appName
+    window <- windowNew WindowTypeToplevel
+    widgetSetName window $ T.pack appName
 
-    let Rectangle x _ w _ = monitorSize
+    monitorX <- rectangleReadX monitorSize
+    monitorW <- rectangleReadWidth monitorSize
     windowSetTypeHint window WindowTypeHintDock
     windowSetScreen window screen
-    windowSetDefaultSize window w barHeight
-    windowMove window x 0
-    _ <- onRealize window $
-        setStrutProperties window $ topStrut monitorSize
+    windowSetDefaultSize window (fromIntegral monitorW) (fromIntegral barHeight)
+    strut <- topStrut monitorSize
+    windowMove window monitorX 0
+    _ <- onWidgetRealize window $
+        setStrutProperties window strut
 
-    box <- hBoxNew False widgetSpacing
+    box <- boxNew OrientationHorizontal 0
     containerAdd window box
 
     wk <- tianbarWebkitNew
-    boxPackStart box wk PackGrow 0
-
-    tray <- systrayNew
-    boxPackEnd box tray PackNatural 0
+    boxPackStart box wk True True 0
 
     widgetShow window
     widgetShow box
 
-    mainGUI
-    return ()
+    GtkFunctions.main

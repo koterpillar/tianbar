@@ -2,81 +2,98 @@
 module System.Tianbar.WebKit where
 
 import Control.Concurrent
+import Control.Exception
 import Control.Monad
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Maybe
 
-import Graphics.UI.Gtk hiding (disconnect, Signal, Variant)
-import Graphics.UI.Gtk.WebKit.GeolocationPolicyDecision
-import Graphics.UI.Gtk.WebKit.NetworkRequest
-import Graphics.UI.Gtk.WebKit.WebSettings
-import Graphics.UI.Gtk.WebKit.WebView
-import Graphics.UI.Gtk.WebKit.WebWindowFeatures
+import qualified Data.Text as T
+import Data.GI.Base
 
-import Network.URI
+import GI.Gdk.Flags
+import GI.Gdk.Objects.Display
+import GI.Gdk.Objects.Screen
+import GI.Gdk.Structs.Geometry
+import GI.Gdk.Structs.Rectangle
+
+import GI.Gio.Objects.MemoryInputStream
+
+import GI.GLib.Callbacks
+import GI.GLib.Functions hiding (getUserConfigDir)
+
+import GI.Gtk hiding (main)
+
+import GI.WebKit2.Callbacks
+import GI.WebKit2.Interfaces.PermissionRequest (permissionRequestAllow)
+import GI.WebKit2.Objects.SecurityManager
+import GI.WebKit2.Objects.Settings
+import GI.WebKit2.Objects.URISchemeRequest
+import GI.WebKit2.Objects.WebContext
+import GI.WebKit2.Objects.WebView
+import GI.WebKit2.Objects.WindowProperties
 
 import System.Directory
 import System.Environment.XDG.BaseDir
 
-import System.Tianbar.Callbacks
+import System.Tianbar.Plugin
 import System.Tianbar.Configuration
 import System.Tianbar.Server
-import System.Tianbar.Utils
 
 import Paths_tianbar
+
 
 tianbarWebView :: IO WebView
 tianbarWebView = do
     wk <- webViewNew
 
-    -- Enable AJAX access to all domains
-    wsettings <- webViewGetWebSettings wk
-    set wsettings [webSettingsEnableUniversalAccessFromFileUris := True]
-    webViewSetWebSettings wk wsettings
+    -- Debugging settings
+    wsettings <- webViewGetSettings wk
+    settingsSetEnableWriteConsoleMessagesToStdout wsettings True
+    settingsSetEnableDeveloperExtras wsettings True
+    webViewSetSettings wk wsettings
 
     -- Enable geolocation
-    _ <- on wk geolocationPolicyDecisionRequested $ \_ decision -> do
-        geolocationPolicyAllow decision
+    _ <- onWebViewPermissionRequest wk $ \request -> do
+        -- TODO: This should only match geolocation permission requests
+        permissionRequestAllow request
         return True
 
     -- Initialize plugins, and re-initialize on reloads
-    server <- startServer (callbacks wk) >>= newMVar
-    _ <- on wk loadStarted $ \_ -> modifyMVar_ server $ \oldServer -> do
-        stopServer oldServer
-        startServer (callbacks wk)
+    server <- startServer wk >>= newMVar
+    -- TODO: Destroy server (stopServer) on destroying the WebView
 
-    -- Process the special overrides
-    _ <- on wk resourceRequestStarting $ \_ _ nreq _ -> void $ runMaybeT $ do
-        req <- liftMT nreq
-        uriStr <- MaybeT $ networkRequestGetUri req
-        uri <- liftMT $ parseURI uriStr
-        override <- liftIO $ withMVar server $ return . serverOverrideURI
-        let uri' = override uri
-        liftIO $ networkRequestSetUri req $ show uri'
+    -- All Tianbar plugins are served under tianbar://, allow it for CORS and
+    -- register its handler
+    ctx <- webViewGetContext wk
+    sec <- webContextGetSecurityManager ctx
+    securityManagerRegisterUriSchemeAsCorsEnabled sec "tianbar"
+    webContextRegisterUriScheme ctx "tianbar" (handleRequest server)
 
     -- Handle new window creation
-    _ <- on wk createWebView $ \_ -> do
+    _ <- onWebViewCreate wk $ \_ -> do
         nwk <- tianbarWebView
 
-        window <- windowNew
+        window <- windowNew WindowTypeToplevel
+        windowSetDecorated window False
         containerAdd window nwk
 
-        _ <- on nwk webViewReady $ do
-            wfeat <- webViewGetWindowFeatures nwk
+        _ <- onWebViewReadyToShow nwk $ do
+            wprop <- webViewGetWindowProperties nwk
+            Just wgeom <- getWindowPropertiesGeometry wprop
 
-            [wx, wy, ww, wh] <- mapM (get wfeat) [ webWindowFeaturesX
-                                                 , webWindowFeaturesY
-                                                 , webWindowFeaturesWidth
-                                                 , webWindowFeaturesHeight
-                                                 ]
+            [wx, wy, ww, wh] <- mapM ($ wgeom) [ rectangleReadX
+                                               , rectangleReadY
+                                               , rectangleReadWidth
+                                               , rectangleReadHeight
+                                               ]
 
+            geomHint <- newZeroGeometry
+            geometryWriteMinWidth geomHint ww
+            geometryWriteMinHeight geomHint wh
+            geometryWriteMaxWidth geomHint ww
+            geometryWriteMaxHeight geomHint wh
             windowSetGeometryHints window
-                                       (Nothing :: Maybe Window)
-                                       (Just (ww, wh))
-                                       (Just (ww, wh))
-                                       Nothing
-                                       Nothing
-                                       Nothing
+                noWidget
+                (Just geomHint)
+                [WindowHintsMinSize, WindowHintsMaxSize]
 
             widgetShow window
             widgetShow nwk
@@ -85,11 +102,38 @@ tianbarWebView = do
             windowSetKeepAbove window True
             windowStick window
 
-            return False
+            return ()
 
-        return nwk
+        toWidget nwk
 
     return wk
+
+
+handleRequest :: MVar Server -> URISchemeRequestCallback
+handleRequest server ureq = do
+    uriStr <- uRISchemeRequestGetUri ureq
+    let uri = parseURI uriStr
+    response <- catch
+        (fmap Right $ withMVar server $ \srv -> handleURI srv uri)
+        (\e -> return $ Left (e :: SomeException))
+    case response of
+      Left exc -> do
+          putStrLn $ "Error on URI: " ++ T.unpack uriStr
+          err <- tianbarError 500 (show exc)
+          uRISchemeRequestFinishError ureq err
+      Right Nothing -> do
+          putStrLn $ "URI invalid: " ++ T.unpack uriStr
+          err <- tianbarError 404 "Invalid tianbar: URI"
+          uRISchemeRequestFinishError ureq err
+      Right (Just resp') -> do
+          stream <- memoryInputStreamNewFromData (content resp') noDestroyNotify
+          uRISchemeRequestFinish ureq stream (-1) (T.pack <$> mimeType resp')
+
+
+tianbarError :: Int -> String -> IO GError
+tianbarError code message = do
+    errDomain <- quarkFromString (Just $ T.pack "Tianbar")
+    gerrorNew errDomain (fromIntegral code) (T.pack message)
 
 
 loadIndexPage :: WebView -> IO ()
@@ -104,18 +148,21 @@ loadIndexPage wk = do
         exampleHtml <- getDataFileName "index.html"
         copyFile exampleHtml htmlFile
 
-    webViewLoadUri wk $ "file://" ++ htmlFile
+    webViewLoadUri wk $ T.pack "tianbar:///user/index.html"
+
 
 tianbarWebkitNew :: IO Widget
 tianbarWebkitNew = do
-    l <- tianbarWebView
+    wv <- tianbarWebView
 
-    _ <- on l realize $ loadIndexPage l
+    _ <- onWidgetRealize wv $ loadIndexPage wv
 
     Just disp <- displayGetDefault
-    screen <- displayGetScreen disp myScreen
-    (Rectangle _ _ sw _) <- screenGetMonitorGeometry screen myMonitor
-    _ <- on l sizeRequest $ return (Requisition (sw `div` 2) barHeight)
+    screen <- displayGetDefaultScreen disp
+    monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
+    monitorW <- rectangleReadWidth monitorSize
 
-    widgetShowAll l
-    return (toWidget l)
+    widgetSetSizeRequest wv (monitorW `div` 2) (fromIntegral barHeight)
+
+    widgetShowAll wv
+    toWidget wv

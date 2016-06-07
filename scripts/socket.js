@@ -11,15 +11,12 @@ define(['jquery', './tianbar'], function ($, tianbar) {
    * @return {Object} A socket object
    */
   return function (path) {
-    var evt = tianbar.createEvent();
-
     return $.ajax('tianbar:///socket/connect', {
       data: {
-        callbackIndex: evt.index,
         path: path,
         random: new Date().getTime()
       }
-    }).then(function () {
+    }).then(tianbar.createEvent).then(function (evt) {
       return {
         /**
          * Send data to a socket.
@@ -28,7 +25,7 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         send: function (data) {
           $.ajax('tianbar:///socket/send', {
             data: {
-              callbackIndex: evt.index,
+              callbackIndex: evt.callbackIndex,
               data: data,
               random: new Date().getTime()
             }
@@ -44,7 +41,7 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         close: function () {
           $.ajax('tianbar:///socket/close', {
             data: {
-              callbackIndex: evt.index,
+              callbackIndex: evt.callbackIndex,
               random: new Date().getTime()
             }
           });
