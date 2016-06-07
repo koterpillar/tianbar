@@ -15,6 +15,10 @@ define(['jquery', './socket'], function ($, socket) {
 
   var WAVES = 5;
 
+  var self = {};
+
+  self.settings_command = 'gnome-control-center sound &';
+
   function uid() {
     return $.ajax('tianbar:///root/proc/self/status')
     .then(function (result) {
@@ -84,6 +88,14 @@ define(['jquery', './socket'], function ($, socket) {
       widget.attr('title', percentage + '%');
 
       window.setTimeout(requestDump, 1000);
+
+      widget.click(function () {
+        $.ajax('tianbar:///execute', {
+          data: {
+            command: 'gnome-control-center sound &'
+          }
+        });
+      });
     });
 
     function requestDump () {
@@ -92,4 +104,6 @@ define(['jquery', './socket'], function ($, socket) {
 
     requestDump();
   });
+
+  return self;
 });
