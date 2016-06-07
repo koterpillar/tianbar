@@ -87,7 +87,7 @@ library
                      , blaze-markup
   hs-source-dirs:      src
   exposed-modules:     System.Tianbar.XMonadLog
-  ghc-options:         -Wall -rtsopts
+  ghc-options:         -Wall
 
 source-repository head
   type:                git
