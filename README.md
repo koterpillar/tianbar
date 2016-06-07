@@ -11,7 +11,7 @@ Usage
 -----
 
 Tianbar will show `index.html` from its [XDG configuration directory][xdg]
-(usually `$HOME/.config/taffybar`). It it up to you to create that, add styles,
+(usually `$HOME/.config/tianbar`). It it up to you to create that, add styles,
 widgets and other behavior.
 
 A small collection of widgets written in JavaScript is bundled with Tianbar,
