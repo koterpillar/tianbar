@@ -75,6 +75,7 @@ tianbarWebView = do
         windowSetDecorated window False
         containerAdd window nwk
 
+        -- Move and resize the new popup window to the requested coordinates
         _ <- onWebViewReadyToShow nwk $ do
             wprop <- webViewGetWindowProperties nwk
             Just wgeom <- getWindowPropertiesGeometry wprop
@@ -103,6 +104,9 @@ tianbarWebView = do
             windowStick window
 
             return ()
+
+        -- When the popup window wants to close, remove the popup window
+        _ <- onWebViewClose nwk $ widgetDestroy window
 
         toWidget nwk
 

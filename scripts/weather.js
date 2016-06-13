@@ -89,6 +89,7 @@ define(['jquery', 'moment'], function ($, moment) {
         ].join(','));
     } else {
       forecastWindow.close();
+      forecastWindow = null;
     }
 
     render();
