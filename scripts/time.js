@@ -29,10 +29,10 @@ define(['jquery', 'moment'], function ($, moment) {
 
   $(document).ready(function () {
     var lang = navigator.language;
-    if (moment.langData(lang)) {
-      moment.lang(lang);
+    if (moment.localeData(lang)) {
+      moment.locale(lang);
     } else {
-      moment.lang(navigator.language.replace(/-.+/, ''));
+      moment.locale(navigator.language.replace(/-.+/, ''));
     }
     updateClock();
   });
