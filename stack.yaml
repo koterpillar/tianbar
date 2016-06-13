@@ -6,4 +6,4 @@ extra-deps:
 - gi-soup-2.4.3
 - gi-webkit2-4.0.3
 - xmonad-contrib-0.12
-resolver: lts-6.0
+resolver: lts-6.2
