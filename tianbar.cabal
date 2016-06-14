@@ -16,6 +16,7 @@ data-files:          README.md
                    , index.html
                    , scripts/dbus.js
                    , scripts/ibus.js
+                   , scripts/network.js
                    , scripts/power.js
                    , scripts/socket.js
                    , scripts/tianbar.js
