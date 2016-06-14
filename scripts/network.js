@@ -223,7 +223,6 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   function refresh_device(conn, device) {
-    console.log('refresh_device conn=' + conn + ' dev=' + device);
     if (conn != self.connection.name) {
       // Stale signal from an old connection which isn't the one we want
       // anymore
@@ -248,7 +247,6 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   function refresh_connection(conn) {
-    console.log('refresh_connection conn=' + conn);
     if (conn != self.connection.name) {
       // Stale signal from an old connection which isn't the one we want
       // anymore
@@ -267,7 +265,6 @@ define(['jquery', './dbus'], function ($, dbus) {
       get_conn_property('State'),
       get_conn_property('Devices')
     ).done(function (conn_type, conn_state, devices) {
-      console.log('refresh_connection type=' + conn_type + ' state=' + conn_state + ' devices=' + JSON.stringify(devices));
       self.connection.type = conn_type;
       self.connection.state = conn_state;
 
@@ -297,7 +294,6 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   self.refresh = function () {
-    console.log('refresh');
     dbus.system.getProperty(
       'org.freedesktop.NetworkManager',
       '/org/freedesktop/NetworkManager',
@@ -305,7 +301,6 @@ define(['jquery', './dbus'], function ($, dbus) {
       'PrimaryConnection'
     ).done(function (conn) {
       if (self.connection.name != conn) {
-        console.log('refresh: new conn=' + conn);
         self.connection.name = conn;
         subscribe_to_connection(conn);
       }
