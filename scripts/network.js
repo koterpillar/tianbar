@@ -54,8 +54,11 @@ define(['jquery', './dbus'], function ($, dbus) {
     context.lineWidth = 1.5;
 
     const barCount = Math.floor(Math.min(strength, 100) * maxBars / 100);
-    for (var i = 0; i < barCount; i++) {
+    for (var i = 0; i < maxBars; i++) {
       context.beginPath();
+      if (i >= barCount) {
+        context.strokeStyle = INACTIVE_COLOR;
+      }
       context.arc(
         WIDTH / 2, HEIGHT - bottomPadding,
         4 * i + 2,
@@ -168,18 +171,15 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   // Display the network status
   self.display = function () {
-    var context = canvas();
+    const context = canvas();
 
     const isConnected = self.connection.type !== null;
-    // TODO: Devices have their own types, but there might be more than one of
-    // them. Either leave the devices out, or use their types.
     const isWireless = self.connection.type == ConnectionType.WiFi;
 
     if (!isConnected) {
       normal(context, INACTIVE_COLOR);
     } else if (isWireless) {
-      // TODO: Show the wireless signal strength
-      wireless(context, 100);
+      wireless(context, self.connection.strength || 0);
     } else {
       normal(context);
     }
@@ -209,41 +209,45 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   self.connection = {
     name: null,
-    type: null,
-    state: NMActiveConnectionState.Unknown,
-    devices: {},
   };
 
-  function watch_properties(obj) {
+  // Remove stale information about the connection
+  function reset_connection() {
+    self.connection.type = null;
+    self.connection.state = NMActiveConnectionState.Unknown;
+    self.connection.strength = null;
+  }
+  reset_connection();
+
+  const get_nm_property = (path, iface, prop) => dbus.system.getProperty(
+    'org.freedesktop.NetworkManager', path, iface, prop);
+
+  function watch_properties(path) {
+    // NetworkManager doesn't emit PropertiesChanged signal on the
+    // obj.freedesktop.DBus.Properties interface, but on its own.
     return dbus.system.listen({
-      path: obj,
-      iface: 'org.freedesktop.DBus.Properties',
+      path: path,
       member: 'PropertiesChanged'
     });
   }
 
-  function refresh_device(conn, device) {
-    if (conn != self.connection.name) {
-      // Stale signal from an old connection which isn't the one we want
-      // anymore
+  function refresh_connection_object(conn, conn_object) {
+    if (conn != self.connection.name ||
+      conn_object != self.connection.specific_object) {
+      // Stale signal from an old connection or device
       return;
     }
 
-    var get_dev_property = (prop) => dbus.system.getProperty(
-      'org.freedesktop.NetworkManager',
-      device,
-      'org.freedesktop.NetworkManager.Device',
-      prop
-    );
+    const get_obj_property = (iface, prop) => get_nm_property(conn_object, iface, prop);
 
-    $.when(
-      get_dev_property('DeviceType')
-    ).done(function (dev_type) {
-      self.connection.devices[device] = {
-        type: dev_type
-      };
-      self.display();
-    });
+    if (/AccessPoint/.test(conn_object)) {
+      $.when(
+        get_obj_property('org.freedesktop.NetworkManager.AccessPoint', 'Strength')
+      ).done(function (strength) {
+        self.connection.strength = strength;
+        self.display();
+      });
+    }
   }
 
   function refresh_connection(conn) {
@@ -253,8 +257,7 @@ define(['jquery', './dbus'], function ($, dbus) {
       return;
     }
 
-    var get_conn_property = (prop) => dbus.system.getProperty(
-      'org.freedesktop.NetworkManager',
+    const get_conn_property = (prop) => get_nm_property(
       conn,
       'org.freedesktop.NetworkManager.Connection.Active',
       prop
@@ -263,17 +266,19 @@ define(['jquery', './dbus'], function ($, dbus) {
     $.when(
       get_conn_property('Type'),
       get_conn_property('State'),
-      get_conn_property('Devices')
-    ).done(function (conn_type, conn_state, devices) {
+      get_conn_property('SpecificObject')
+    ).done(function (conn_type, conn_state, conn_object) {
       self.connection.type = conn_type;
       self.connection.state = conn_state;
+      self.connection.specific_object = conn_object;
 
-      devices.forEach(function (device) {
-        watch_properties(device).then(function (evt) {
-          evt.add(function () { refresh_device(conn, device); });
+      if (conn_object != '/') {
+        watch_properties(conn_object).then(function (evt) {
+          evt.add(function () {
+            refresh_connection_object(conn, conn_object); });
         });
-        refresh_device(conn, device);
-      });
+        refresh_connection_object(conn, conn_object);
+      }
 
       self.display();
     });
@@ -294,14 +299,14 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   self.refresh = function () {
-    dbus.system.getProperty(
-      'org.freedesktop.NetworkManager',
+    get_nm_property(
       '/org/freedesktop/NetworkManager',
       'org.freedesktop.NetworkManager',
       'PrimaryConnection'
     ).done(function (conn) {
       if (self.connection.name != conn) {
         self.connection.name = conn;
+        reset_connection();
         subscribe_to_connection(conn);
       }
     });
