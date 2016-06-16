@@ -1,5 +1,10 @@
 FROM ubuntu
 
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
 # http://docs.haskellstack.org/en/stable/install_and_upgrade/#ubuntu
 RUN \
     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442 && \
