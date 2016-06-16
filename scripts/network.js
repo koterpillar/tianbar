@@ -53,7 +53,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
     context.lineWidth = 1.5;
 
-    const barCount = Math.floor(Math.min(strength, 100) * maxBars / 100);
+    const barCount = Math.round(Math.min(strength, 100) * maxBars / 100);
     for (var i = 0; i < maxBars; i++) {
       context.beginPath();
       if (i >= barCount) {
