@@ -19,10 +19,13 @@ RUN \
     apt-get -y install \
         libcairo2-dev \
         libgirepository1.0-dev \
+        libgtk-3-dev \
+        libjavascriptcoregtk-4.0-dev \
         libx11-dev \
         libxft-dev \
         libxml2-dev \
         libxrandr-dev \
+        libwebkit2gtk-4.0-dev \
         pkg-config \
     && \
     true
