@@ -9,6 +9,8 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   const INACTIVE_COLOR = '#999';
 
+  self.settings_command = 'gnome-control-center network &';
+
   self.widget = function () {
     return $('.widget-network');
   };
@@ -313,6 +315,14 @@ define(['jquery', './dbus'], function ($, dbus) {
   };
 
   $(document).ready(function () {
+    self.widget().click(function () {
+      $.ajax('tianbar:///execute', {
+        data: {
+          command: self.settings_command
+        }
+      });
+    });
+
     watch_properties('/org/freedesktop/NetworkManager').then(function (evt) {
       evt.add(self.refresh);
     });
