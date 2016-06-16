@@ -92,7 +92,7 @@ define(['jquery', './socket'], function ($, socket) {
       widget.click(function () {
         $.ajax('tianbar:///execute', {
           data: {
-            command: 'gnome-control-center sound &'
+            command: self.settings_command
           }
         });
       });

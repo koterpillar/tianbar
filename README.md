@@ -26,6 +26,10 @@ For an example of RequireJS configuration, see the
 
 Displays the status of IBus input method.
 
+### Network
+
+Displays the connection status from NetworkManager.
+
 ### Power
 
 Displays the battery status for all the batteries reporting through UPower.
