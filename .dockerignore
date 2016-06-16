@@ -1,8 +1,8 @@
-/.git
-/.dockerignore
-/.gitignore
-/.jshintignore
-/.hshintrc
-/Dockerfile
-/.stack-work
-/dist
+.git
+.dockerignore
+.gitignore
+.jshintignore
+.hshintrc
+Dockerfile
+.stack-work
+dist
