@@ -30,19 +30,6 @@ define(['jquery', './dbus'], function ($, dbus) {
     // TODO: More types
   };
 
-  function canvas() {
-    const canvas = $('<canvas />').attr({
-      width: WIDTH,
-      height: HEIGHT
-    });
-
-    const widget = self.widget();
-    widget.empty();
-    widget.append(canvas);
-
-    return canvas[0].getContext('2d');
-  }
-
   // Show the wireless signal strength on the canvas
   function wireless(context, strength) {
     const pi = Math.PI;
@@ -173,7 +160,17 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   // Display the network status
   self.display = function () {
-    const context = canvas();
+    const widget = self.widget();
+
+    const canvas = $('<canvas />').attr({
+      width: WIDTH,
+      height: HEIGHT
+    });
+
+    widget.empty();
+    widget.append(canvas);
+
+    const context = canvas[0].getContext('2d');
 
     const isConnected = self.connection.type !== null;
     const isWireless = self.connection.type == ConnectionType.WiFi;
@@ -206,15 +203,18 @@ define(['jquery', './dbus'], function ($, dbus) {
         overlayQuestion(context);
     }
 
+    widget.attr('title', self.connection.name);
+
     self.updated.fire();
   };
 
   self.connection = {
-    name: null,
+    id: null,
   };
 
   // Remove stale information about the connection
   function reset_connection() {
+    self.connection.name = null;
     self.connection.type = null;
     self.connection.state = NMActiveConnectionState.Unknown;
     self.connection.strength = null;
@@ -234,7 +234,7 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   function refresh_connection_object(conn, conn_object) {
-    if (conn != self.connection.name ||
+    if (conn != self.connection.id ||
       conn_object != self.connection.specific_object) {
       // Stale signal from an old connection or device
       return;
@@ -253,7 +253,7 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   function refresh_connection(conn) {
-    if (conn != self.connection.name) {
+    if (conn != self.connection.id) {
       // Stale signal from an old connection which isn't the one we want
       // anymore
       return;
@@ -266,10 +266,12 @@ define(['jquery', './dbus'], function ($, dbus) {
     );
 
     $.when(
+      get_conn_property('Id'),
       get_conn_property('Type'),
       get_conn_property('State'),
       get_conn_property('SpecificObject')
-    ).done(function (conn_type, conn_state, conn_object) {
+    ).done(function (conn_name, conn_type, conn_state, conn_object) {
+      self.connection.name = conn_name;
       self.connection.type = conn_type;
       self.connection.state = conn_state;
       self.connection.specific_object = conn_object;
@@ -306,8 +308,8 @@ define(['jquery', './dbus'], function ($, dbus) {
       'org.freedesktop.NetworkManager',
       'PrimaryConnection'
     ).done(function (conn) {
-      if (self.connection.name != conn) {
-        self.connection.name = conn;
+      if (self.connection.id != conn) {
+        self.connection.id = conn;
         reset_connection();
         subscribe_to_connection(conn);
       }
