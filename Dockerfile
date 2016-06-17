@@ -30,7 +30,13 @@ RUN \
     && \
     true
 
+RUN stack build haskell-gi
+RUN stack build xmonad
+RUN stack build lens
+
 ADD . /tianbar
 WORKDIR /tianbar
+
+RUN stack build --only-dependencies
 
 RUN stack build
