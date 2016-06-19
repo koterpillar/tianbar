@@ -1,3 +1,4 @@
+/* jshint esversion: 6 */
 /*
  * A widget to show and control the system volume.
  *
@@ -6,16 +7,19 @@
 define(['jquery', './socket'], function ($, socket) {
   "use strict";
 
-  var UID_RE = /Uid:\t(\d+)/;
+  const UID_RE = /Uid:\t(\d+)/;
 
-  var VOLUME_RE = /set-sink-volume.+ ([^ \n]+)/;
-  var MUTE_RE = /set-sink-mute.+ ([^ \n]+)/;
+  const VOLUME_RE = /set-sink-volume.+ ([^ \n]+)/;
+  const MUTE_RE = /set-sink-mute.+ ([^ \n]+)/;
 
-  var MAX_VOLUME = 0x10000;
+  const MAX_VOLUME = 0x10000;
 
-  var WAVES = 5;
+  const WIDTH = 25;
+  const HEIGHT = 25;
 
-  var self = {};
+  const WAVES = 5;
+
+  const self = {};
 
   self.settings_command = 'gnome-control-center sound &';
 
@@ -25,6 +29,79 @@ define(['jquery', './socket'], function ($, socket) {
       return +UID_RE.exec(result)[1];
     });
   }
+
+  self.widget = () => $('.widget-volume');
+
+  self.display = function () {
+    const widget = self.widget();
+
+    const canvas = $('<canvas />').attr({
+      width: WIDTH,
+      height: HEIGHT
+    });
+
+    widget.empty();
+    widget.append(canvas);
+
+    const context = canvas[0].getContext('2d');
+
+    const middle = WIDTH / 2 - 2;
+
+    const speakerBaseH = 5;
+    const speakerBaseW = 4;
+    const speakerW = 5;
+    const speakerH = 13;
+
+    const spacing = 2;
+
+    const crossSize = 6;
+
+    // Draw a speaker
+    context.beginPath();
+    context.moveTo(0, middle - speakerBaseH / 2);
+    context.lineTo(0, middle + speakerBaseH / 2);
+    context.lineTo(speakerBaseW, middle + speakerBaseH / 2);
+    context.lineTo(speakerBaseW + speakerW, middle + speakerH / 2);
+    context.lineTo(speakerBaseW + speakerW, middle - speakerH / 2);
+    context.lineTo(speakerBaseW, middle - speakerBaseH / 2);
+    context.lineTo(0, middle - speakerBaseH / 2);
+    context.fill();
+
+    if (self.mute) {
+      // Draw a cross
+      const crossLeft = speakerBaseW + speakerW + spacing;
+
+      context.save();
+      context.lineWidth = 1.5;
+
+      context.beginPath();
+      context.moveTo(crossLeft, middle - crossSize / 2);
+      context.lineTo(crossLeft + crossSize, middle + crossSize / 2);
+      context.stroke();
+
+      context.beginPath();
+      context.moveTo(crossLeft + crossSize, middle - crossSize / 2);
+      context.lineTo(crossLeft, middle + crossSize / 2);
+      context.stroke();
+
+      context.restore();
+    } else {
+      // Draw waves
+      const waveAngle = Math.PI / 6;
+      for (var i = 0; i < self.volume * WAVES; i ++) {
+        context.beginPath();
+        context.arc(
+          0, middle,
+          speakerBaseW + speakerW + spacing + 3 * i,
+          waveAngle / 2, -waveAngle / 2,
+          true);
+        context.stroke();
+      }
+    }
+
+    const percentage = self.volume.toFixed(2) * 100;
+    widget.attr('title', percentage + '%');
+  };
 
   $.when(
     $.ajax('tianbar:///execute', {
@@ -37,65 +114,13 @@ define(['jquery', './socket'], function ($, socket) {
     return socket('/var/run/user/' + uid + '/pulse/cli');
   }).then(function (pulseSocket) {
     pulseSocket.recv.add(function (dump) {
-      var mute = MUTE_RE.exec(dump)[1] === "yes";
-      var volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
+      self.mute = MUTE_RE.exec(dump)[1] === "yes";
+      self.volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
 
-      var widget = $('.widget-volume');
-      widget.empty();
-
-      var speaker = $('<div />').css({
-        'float': 'left',
-        'border-top': '4px solid transparent',
-        'border-bottom': '4px solid transparent',
-        'border-right': '5px solid black',
-        'margin-top': 5,
-        'margin-bottom': 5,
-        'margin-right': 2
-      }).append($('<div />').css({
-        'background': 'black',
-        'width': 4,
-        'height': 5
-      }));
-      widget.append(speaker);
-
-      var waves = $('<div />').css({
-        'float': 'left',
-        'height': '100%',
-        'margin-top': 5,
-        'margin-bottom': 5,
-        'width': 12
-      });
-      if (mute) {
-        waves.append('x');
-      } else {
-        for (var i = 0; i < volume * WAVES; i ++) {
-          var waveSize = 6 + i * 2;
-          var margin = 10 - waveSize / 2;
-          var wave = $('<div />').css({
-            'display': 'inline-block',
-            'width': 1,
-            'height': waveSize,
-            'margin': 1,
-            'background': 'black',
-            'margin-bottom': margin
-          });
-          waves.append(wave);
-        }
-      }
-      widget.append(waves);
-
-      var percentage = volume.toFixed(2) * 100;
-      widget.attr('title', percentage + '%');
+      self.display();
 
       window.setTimeout(requestDump, 1000);
 
-      widget.click(function () {
-        $.ajax('tianbar:///execute', {
-          data: {
-            command: self.settings_command
-          }
-        });
-      });
     });
 
     function requestDump () {
@@ -103,6 +128,16 @@ define(['jquery', './socket'], function ($, socket) {
     }
 
     requestDump();
+  });
+
+  $(document).ready(function () {
+    self.widget().click(function () {
+      $.ajax('tianbar:///execute', {
+        data: {
+          command: self.settings_command
+        }
+      });
+    });
   });
 
   return self;
