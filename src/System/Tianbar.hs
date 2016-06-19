@@ -20,6 +20,7 @@ import System.Tianbar.Configuration
 import System.Tianbar.StrutProperties
 import System.Tianbar.WebKit
 
+
 topStrut :: Rectangle -> IO StrutProperties
 topStrut rect = do
     mX <- rectangleReadX rect
@@ -30,6 +31,30 @@ topStrut rect = do
         h = barHeight + fromIntegral mY
      in return (0, 0, h, 0, 0, 0, 0, 0, x, x + w, 0, 0)
 
+
+sizeMainWindow :: Window -> IO ()
+sizeMainWindow window = do
+    Just disp <- displayGetDefault
+    screen <- displayGetDefaultScreen disp
+    monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
+
+    monitorX <- rectangleReadX monitorSize
+    monitorY <- rectangleReadY monitorSize
+    monitorW <- rectangleReadWidth monitorSize
+
+    let windowX = monitorX
+    let windowY = monitorY
+    let windowWidth = fromIntegral monitorW
+    let windowHeight = fromIntegral barHeight
+
+    windowSetDefaultSize window (fromIntegral monitorW) (fromIntegral barHeight)
+    windowMove window windowX windowY
+    windowResize window windowWidth windowHeight
+
+    strut <- topStrut monitorSize
+    setStrutProperties window strut
+
+
 main :: IO ()
 main = do
     progName <- getProgName
@@ -38,20 +63,15 @@ main = do
 
     Just disp <- displayGetDefault
     screen <- displayGetDefaultScreen disp
-    monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
 
     window <- windowNew WindowTypeToplevel
     widgetSetName window $ T.pack appName
 
-    monitorX <- rectangleReadX monitorSize
-    monitorW <- rectangleReadWidth monitorSize
     windowSetTypeHint window WindowTypeHintDock
     windowSetScreen window screen
-    windowSetDefaultSize window (fromIntegral monitorW) (fromIntegral barHeight)
-    strut <- topStrut monitorSize
-    windowMove window monitorX 0
-    _ <- onWidgetRealize window $
-        setStrutProperties window strut
+
+    _ <- onWidgetRealize window $ sizeMainWindow window
+    _ <- onScreenMonitorsChanged screen $ sizeMainWindow window
 
     box <- boxNew OrientationHorizontal 0
     containerAdd window box
