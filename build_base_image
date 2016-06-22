@@ -1,0 +1,4 @@
+#!/bin/sh -e
+docker pull koterpillar/tianbar_base || true
+docker build -t koterpillar/tianbar_base -f Dockerfile.base .
+docker push koterpillar/tianbar_base
