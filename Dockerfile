@@ -1,4 +1,4 @@
-FROM fedora:rawhide
+FROM fedora:24
 
 ENV LANG C.UTF-8
 ENV LANGUAGE C:en
