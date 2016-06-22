@@ -31,4 +31,4 @@ RUN \
 RUN stack build haskell-gi
 RUN stack build xmonad
 RUN stack build lens
-RUN stack build gi-webkit2
+RUN stack build gi-gtk
