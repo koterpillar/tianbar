@@ -4,5 +4,6 @@ services:
   - docker
 
 script:
+  - ./build_base_image
   - docker build -t koterpillar/tianbar .
   - docker run koterpillar/tianbar stack test
