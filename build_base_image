@@ -1,4 +1,4 @@
 #!/bin/sh -e
+# Pull the base image, but rebuild it to ensure it's up to date
 docker pull koterpillar/tianbar_base || true
 docker build -t koterpillar/tianbar_base -f Dockerfile.base .
-docker push koterpillar/tianbar_base
