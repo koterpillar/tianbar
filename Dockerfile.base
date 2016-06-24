@@ -28,10 +28,11 @@ RUN \
     && \
     true
 
-ADD stack-base.yaml /root/.stack/global-project/stack.yaml
+ADD stack.yaml /root/.stack/global-project/stack.yaml
+RUN sed -i "s/packages:/packages: []/;/- '\.'/d" /root/.stack/global-project/stack.yaml
 
-RUN stack build haskell-gi
+RUN stack build haskell-gi-base
 RUN stack build xmonad
 RUN stack build lens
-RUN stack build gi-gtk
 RUN stack build gi-webkit2
+RUN stack build dbus
