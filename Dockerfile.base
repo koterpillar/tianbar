@@ -28,7 +28,10 @@ RUN \
     && \
     true
 
+ADD stack-base.yaml /root/.stack/global-project/stack.yaml
+
 RUN stack build haskell-gi
 RUN stack build xmonad
 RUN stack build lens
 RUN stack build gi-gtk
+RUN stack build gi-webkit2

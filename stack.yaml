@@ -1,3 +1,4 @@
+# stack-base.yaml must be kept in sync with this file
 packages:
 - '.'
 extra-deps:
