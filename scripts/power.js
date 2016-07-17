@@ -195,7 +195,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     if (st.State === self.DEVICE_STATE.FullyCharged) {
       title = '';
     } else {
-      title = percentage + '%';
+      title = Math.round(percentage) + '%';
       if (st.TimeToEmpty !== 0) {
         title += ' (' + moment.duration(st.TimeToEmpty, 's').humanize() + ')';
       }
