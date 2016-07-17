@@ -263,16 +263,11 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
   // Refresh an individual device
   self.refreshDevice = function (device) {
-    dbus.system.call({
-      'destination': 'org.freedesktop.UPower',
-      'path': device,
-      'iface': 'org.freedesktop.DBus.Properties',
-      'member': 'GetAll',
-      'body': [
-        'string:org.freedesktop.UPower.Device',
-      ]
-    }).done(function (properties) {
-      properties = properties.body[0];
+    dbus.system.getAllProperties(
+      'org.freedesktop.UPower',
+      device,
+      'org.freedesktop.UPower.Device'
+    ).done(function (properties) {
       self.devices[device] = properties;
       self.display();
     });
