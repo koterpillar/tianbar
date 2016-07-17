@@ -1,3 +1,4 @@
+/* jshint esversion: 6 */
 /*
  * A plugin to show the power (e.g. battery) state through UPower.
  *
@@ -216,17 +217,23 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
   self.updated = $.Callbacks();
 
+  // A list of devices currently active
+  self.devices = [];
+
   // A map of device paths to device states
-  self.devices = {};
+  self.deviceProperties = {};
 
   // Display the status of all the devices
   self.display = function () {
-    // TODO: support updating individual devices
     var widget = self.widget();
-    widget.empty();
 
-    $.each(self.devices, function (path, device) {
-      widget.append(self.formatDevice(path, device));
+    widget.empty();
+    self.devices.forEach(function (path) {
+      if (!self.deviceProperties[path]) {
+        // Device is active but no data yet
+        return;
+      }
+      widget.append(self.formatDevice(path, self.deviceProperties[path]));
     });
 
     self.updated.fire();
@@ -247,28 +254,33 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       // Add the display device
       devices.push(self.DISPLAY_DEVICE);
 
-      // TODO: support device add and removal
-      $.each(devices, function(_, device) {
-        dbus.system.listen(
-          { path: device }
-        ).then(function (evt) {
-          evt.add(function() {
-            self.refreshDevice(device);
-          });
-        });
-        self.refreshDevice(device);
+      self.devices = devices;
+
+      self.devices.forEach(function (path) {
+        self.refreshDevice(path);
       });
     });
   };
 
   // Refresh an individual device
-  self.refreshDevice = function (device) {
+  self.refreshDevice = function (path) {
     dbus.system.getAllProperties(
       'org.freedesktop.UPower',
-      device,
+      path,
       'org.freedesktop.UPower.Device'
     ).done(function (properties) {
-      self.devices[device] = properties;
+      if (!self.deviceProperties[path]) {
+        // New device never seen before, listen for changes
+        dbus.system.listen(
+          { path: path }
+        ).then(function (evt) {
+          evt.add(function () {
+            self.refreshDevice(path);
+          });
+        });
+      }
+
+      self.deviceProperties[path] = properties;
       self.display();
     });
   };
