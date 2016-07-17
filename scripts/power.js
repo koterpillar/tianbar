@@ -1,3 +1,4 @@
+/* jshint esversion: 6 */
 /*
  * A plugin to show the power (e.g. battery) state through UPower.
  *
@@ -6,7 +7,7 @@
 define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   "use strict";
 
-  var self = {};
+  const self = {};
 
   self.HOUR = 3600;
 
@@ -45,20 +46,16 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     Phone: 8
   };
 
-  self.widget = function () {
-    return $('.widget-power');
-  };
+  self.DISPLAY_DEVICE = '/org/freedesktop/UPower/devices/DisplayDevice';
 
-  self.fill_color = function () {
-    return self.FILL_COLOR || self.widget().css('color');
-  };
+  self.widget = () => $('.widget-power');
 
-  self.outline_color = function () {
-    return self.OUTLINE_COLOR || self.widget().css('color');
-  };
+  self.fill_color = () => self.FILL_COLOR || self.widget().css('color');
+
+  self.outline_color = () => self.OUTLINE_COLOR || self.widget().css('color');
 
   self.block = function (width, color, border, leftBorder) {
-    var result = $('<div />');
+    const result = $('<div />');
     result.css({
       'display': 'inline-block',
       'background-color': color,
@@ -92,8 +89,14 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
    * Format an HTML element displaying the device status.
    * @param st {Object} The device status, as returned by UPower
    */
-  self.formatDevice = function (st) {
+  self.formatDevice = function (path, st) {
+    // Ignore line power
     if (st.Type == self.DEVICE_TYPE.LinePower) {
+      return '';
+    }
+
+    // Ignore the batteries which are not the (combined) display device
+    if (st.Type == self.DEVICE_TYPE.Battery && path !== self.DISPLAY_DEVICE) {
       return '';
     }
 
@@ -130,13 +133,13 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       timeToFull = self.DEFAULT_TIME * (100 - displayPercentage);
     }
 
-    var hour_width = self.WIDTH * self.HOUR / (timeToEmpty + timeToFull);
+    const hour_width = self.WIDTH * self.HOUR / (timeToEmpty + timeToFull);
 
-    var result = $('<div />').css({
+    const result = $('<div />').css({
       'display': 'inline-block'
     });
 
-    var fillColor = timeToEmpty > self.LOW_TIME ?
+    const fillColor = timeToEmpty > self.LOW_TIME ?
       self.fill_color() : self.FILL_LOW_COLOR;
     var firstSegment = true;
     if (haveTTE) {
@@ -186,7 +189,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     if (st.State === self.DEVICE_STATE.FullyCharged) {
       title = '';
     } else {
-      title = percentage + '%';
+      title = Math.round(percentage) + '%';
       if (st.TimeToEmpty !== 0) {
         title += ' (' + moment.duration(st.TimeToEmpty, 's').humanize() + ')';
       }
@@ -208,17 +211,23 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
   self.updated = $.Callbacks();
 
+  // A list of devices currently active
+  self.devices = [];
+
   // A map of device paths to device states
-  self.devices = {};
+  self.deviceProperties = {};
 
   // Display the status of all the devices
   self.display = function () {
-    // TODO: support updating individual devices
-    var widget = self.widget();
-    widget.empty();
+    const widget = self.widget();
 
-    $.each(self.devices, function (_, device) {
-      widget.append(self.formatDevice(device));
+    widget.empty();
+    self.devices.forEach(function (path) {
+      if (!self.deviceProperties[path]) {
+        // Device is active but no data yet
+        return;
+      }
+      widget.append(self.formatDevice(path, self.deviceProperties[path]));
     });
 
     self.updated.fire();
@@ -235,33 +244,37 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       ]
     }).done(function (devices) {
       devices = devices.body[0];
-      // TODO: support device add and removal
-      $.each(devices, function(_, device) {
-        dbus.system.listen(
-          { path: device }
-        ).then(function (evt) {
-          evt.add(function() {
-            self.refreshDevice(device);
-          });
-        });
-        self.refreshDevice(device);
+
+      // Add the display device
+      devices.push(self.DISPLAY_DEVICE);
+
+      self.devices = devices;
+
+      self.devices.forEach(function (path) {
+        self.refreshDevice(path);
       });
     });
   };
 
   // Refresh an individual device
-  self.refreshDevice = function (device) {
-    dbus.system.call({
-      'destination': 'org.freedesktop.UPower',
-      'path': device,
-      'iface': 'org.freedesktop.DBus.Properties',
-      'member': 'GetAll',
-      'body': [
-        'string:org.freedesktop.UPower.Device',
-      ]
-    }).done(function (properties) {
-      properties = properties.body[0];
-      self.devices[device] = properties;
+  self.refreshDevice = function (path) {
+    dbus.system.getAllProperties(
+      'org.freedesktop.UPower',
+      path,
+      'org.freedesktop.UPower.Device'
+    ).done(function (properties) {
+      if (!self.deviceProperties[path]) {
+        // New device never seen before, listen for changes
+        dbus.system.listen(
+          { path: path }
+        ).then(function (evt) {
+          evt.add(function () {
+            self.refreshDevice(path);
+          });
+        });
+      }
+
+      self.deviceProperties[path] = properties;
       self.display();
     });
   };
