@@ -45,6 +45,8 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     Phone: 8
   };
 
+  self.DISPLAY_DEVICE = '/org/freedesktop/UPower/devices/DisplayDevice';
+
   self.widget = function () {
     return $('.widget-power');
   };
@@ -92,8 +94,14 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
    * Format an HTML element displaying the device status.
    * @param st {Object} The device status, as returned by UPower
    */
-  self.formatDevice = function (st) {
+  self.formatDevice = function (path, st) {
+    // Ignore line power
     if (st.Type == self.DEVICE_TYPE.LinePower) {
+      return '';
+    }
+
+    // Ignore the batteries which are not the (combined) display device
+    if (st.Type == self.DEVICE_TYPE.Battery && path !== self.DISPLAY_DEVICE) {
       return '';
     }
 
@@ -217,8 +225,8 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     var widget = self.widget();
     widget.empty();
 
-    $.each(self.devices, function (_, device) {
-      widget.append(self.formatDevice(device));
+    $.each(self.devices, function (path, device) {
+      widget.append(self.formatDevice(path, device));
     });
 
     self.updated.fire();
@@ -235,6 +243,10 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       ]
     }).done(function (devices) {
       devices = devices.body[0];
+
+      // Add the display device
+      devices.push(self.DISPLAY_DEVICE);
+
       // TODO: support device add and removal
       $.each(devices, function(_, device) {
         dbus.system.listen(
