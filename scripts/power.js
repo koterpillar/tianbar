@@ -7,7 +7,7 @@
 define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   "use strict";
 
-  var self = {};
+  const self = {};
 
   self.HOUR = 3600;
 
@@ -48,20 +48,14 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
   self.DISPLAY_DEVICE = '/org/freedesktop/UPower/devices/DisplayDevice';
 
-  self.widget = function () {
-    return $('.widget-power');
-  };
+  self.widget = () => $('.widget-power');
 
-  self.fill_color = function () {
-    return self.FILL_COLOR || self.widget().css('color');
-  };
+  self.fill_color = () => self.FILL_COLOR || self.widget().css('color');
 
-  self.outline_color = function () {
-    return self.OUTLINE_COLOR || self.widget().css('color');
-  };
+  self.outline_color = () => self.OUTLINE_COLOR || self.widget().css('color');
 
   self.block = function (width, color, border, leftBorder) {
-    var result = $('<div />');
+    const result = $('<div />');
     result.css({
       'display': 'inline-block',
       'background-color': color,
@@ -139,13 +133,13 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       timeToFull = self.DEFAULT_TIME * (100 - displayPercentage);
     }
 
-    var hour_width = self.WIDTH * self.HOUR / (timeToEmpty + timeToFull);
+    const hour_width = self.WIDTH * self.HOUR / (timeToEmpty + timeToFull);
 
-    var result = $('<div />').css({
+    const result = $('<div />').css({
       'display': 'inline-block'
     });
 
-    var fillColor = timeToEmpty > self.LOW_TIME ?
+    const fillColor = timeToEmpty > self.LOW_TIME ?
       self.fill_color() : self.FILL_LOW_COLOR;
     var firstSegment = true;
     if (haveTTE) {
@@ -225,7 +219,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
   // Display the status of all the devices
   self.display = function () {
-    var widget = self.widget();
+    const widget = self.widget();
 
     widget.empty();
     self.devices.forEach(function (path) {
