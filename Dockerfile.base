@@ -8,7 +8,7 @@ ENV LC_ALL C.UTF-8
 
 # http://docs.haskellstack.org/en/stable/install_and_upgrade/#fedora
 RUN \
-    curl -sSL https://s3.amazonaws.com/download.fpcomplete.com/fedora/23/fpco.repo > /etc/yum.repos.d/fpco.repo && \
+    curl -sSL https://s3.amazonaws.com/download.fpcomplete.com/fedora/24/fpco.repo > /etc/yum.repos.d/fpco.repo && \
     dnf -y install ncurses-compat-libs stack && \
     true
 
@@ -28,7 +28,16 @@ RUN \
     && \
     true
 
-RUN stack build haskell-gi
+ADD stack.yaml /root/.stack/global-project/stack.yaml
+RUN sed -i "s/packages:/packages: []/;/- '\.'/d" /root/.stack/global-project/stack.yaml
+
+RUN stack build haskell-gi-base
 RUN stack build xmonad
 RUN stack build lens
-RUN stack build gi-gtk
+RUN stack build gi-webkit2
+RUN stack build dbus
+
+ADD . /tianbar
+WORKDIR /tianbar
+
+RUN stack build --only-dependencies

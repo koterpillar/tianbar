@@ -1,9 +1,7 @@
 sudo: required
-
 services:
-  - docker
-
+- docker
 script:
-  - ./build_base_image
-  - docker build -t koterpillar/tianbar .
-  - docker run koterpillar/tianbar stack test
+- docker pull koterpillar/tianbar_base
+- docker build -t koterpillar/tianbar .
+- docker run koterpillar/tianbar stack test
