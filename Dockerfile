@@ -1,6 +1,6 @@
 # Image for testing Tianbar
 
-FROM koterpillar/tianbar
+FROM koterpillar/tianbar_base
 
 ADD . /tianbar
 WORKDIR /tianbar
