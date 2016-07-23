@@ -93,6 +93,28 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         }).then(function (result) {
           return result.body[0];
         });
+      },
+
+      /**
+       * Get all object properties.
+       * @param destination {String} Destination
+       * @param path {String} Path
+       * @param object {String} Object to get the property of
+       * @return {Deferred} A promise to be fulfilled or rejected with the
+       * result
+       */
+      getAllProperties: function (destination, path, object) {
+        return this.call({
+          'destination': destination,
+          'path': path,
+          'iface': 'org.freedesktop.DBus.Properties',
+          'member': 'GetAll',
+          'body': [
+            'string:' + object
+          ]
+        }).then(function (result) {
+          return result.body[0];
+        });
       }
     };
   }
@@ -100,7 +122,6 @@ define(['jquery', './tianbar'], function ($, tianbar) {
   /**
    * Connect to an arbitrary bus.
    * @param address {String} Bus address
-   * 'destination', 'body')
    * @return {Deferred} A promise to be fulfilled with the bus object
    */
   function connectBus(address) {
