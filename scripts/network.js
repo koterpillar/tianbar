@@ -27,6 +27,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   const ConnectionType = {
     WiFi: '802-11-wireless',
+    VPN: 'vpn',
     // TODO: More types
   };
 
