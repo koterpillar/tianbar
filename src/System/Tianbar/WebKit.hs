@@ -80,17 +80,19 @@ tianbarWebView = do
             wprop <- webViewGetWindowProperties nwk
             Just wgeom <- getWindowPropertiesGeometry wprop
 
-            [wx, wy, ww, wh] <- mapM ($ wgeom) [ rectangleReadX
-                                               , rectangleReadY
-                                               , rectangleReadWidth
-                                               , rectangleReadHeight
-                                               ]
+            wx <- get wgeom rectangleX
+            wy <- get wgeom rectangleY
+            ww <- get wgeom rectangleWidth
+            wh <- get wgeom rectangleHeight
 
             geomHint <- newZeroGeometry
-            geometryWriteMinWidth geomHint ww
-            geometryWriteMinHeight geomHint wh
-            geometryWriteMaxWidth geomHint ww
-            geometryWriteMaxHeight geomHint wh
+
+            set geomHint [ geometryMinWidth := ww
+                         , geometryMinHeight := wh
+                         , geometryMaxWidth := ww
+                         , geometryMaxHeight := wh
+                         ]
+
             windowSetGeometryHints window
                 noWidget
                 (Just geomHint)
@@ -164,7 +166,7 @@ tianbarWebkitNew = do
     Just disp <- displayGetDefault
     screen <- displayGetDefaultScreen disp
     monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
-    monitorW <- rectangleReadWidth monitorSize
+    monitorW <- get monitorSize rectangleWidth
 
     widgetSetSizeRequest wv (monitorW `div` 2) (fromIntegral barHeight)
 

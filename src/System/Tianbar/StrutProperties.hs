@@ -9,7 +9,8 @@ import Data.GI.Base.ShortPrelude
 
 import qualified GI.Gtk as Gtk
 
-import GI.Gdk.Types
+import GI.Gdk.Enums
+import GI.Gdk.Objects.Window
 import GI.Gdk.Structs.Atom
 
 import Foreign
@@ -29,8 +30,8 @@ foreign import ccall "gdk_property_change" gdk_property_change ::
 
 
 propertyChange ::
-    (MonadIO m, WindowK a, Storable d) =>
-    a                                       -- window
+    (MonadIO m, Storable d) =>
+    Window                                  -- window
     -> Atom                                 -- property
     -> Atom                                 -- type_
     -> Int32                                -- format

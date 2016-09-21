@@ -1,5 +1,6 @@
 module System.Tianbar where
 
+import Data.GI.Base
 import qualified Data.Text as T
 
 import GI.Gdk.Enums hiding (WindowTypeToplevel)
@@ -23,9 +24,9 @@ import System.Tianbar.WebKit
 
 topStrut :: Rectangle -> IO StrutProperties
 topStrut rect = do
-    mX <- rectangleReadX rect
-    mY <- rectangleReadY rect
-    mW <- rectangleReadWidth rect
+    mX <- get rect rectangleX
+    mY <- get rect rectangleY
+    mW <- get rect rectangleWidth
     let x = fromIntegral mX
         w = fromIntegral mW - 1
         h = barHeight + fromIntegral mY
@@ -38,9 +39,9 @@ sizeMainWindow window = do
     screen <- displayGetDefaultScreen disp
     monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
 
-    monitorX <- rectangleReadX monitorSize
-    monitorY <- rectangleReadY monitorSize
-    monitorW <- rectangleReadWidth monitorSize
+    monitorX <- get monitorSize rectangleX
+    monitorY <- get monitorSize rectangleY
+    monitorW <- get monitorSize rectangleWidth
 
     let windowX = monitorX
     let windowY = monitorY

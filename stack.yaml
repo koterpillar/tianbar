@@ -3,7 +3,6 @@ packages:
 extra-deps:
 - X11-xft-0.3.1
 - gi-javascriptcore-4.0.3
-- gi-soup-2.4.3
 - gi-webkit2-4.0.3
 - xmonad-contrib-0.12
-resolver: lts-6.7
+resolver: lts-7.0
