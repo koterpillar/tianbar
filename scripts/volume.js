@@ -21,7 +21,7 @@ define(['jquery', './socket'], function ($, socket) {
 
   const self = {};
 
-  self.settings_command = 'gnome-control-center sound &';
+  self.settings_command = 'gnome-control-center sound';
 
   function uid() {
     return $.ajax('tianbar:///root/proc/self/status')
@@ -132,7 +132,7 @@ define(['jquery', './socket'], function ($, socket) {
 
   $(document).ready(function () {
     self.widget().click(function () {
-      $.ajax('tianbar:///execute', {
+      $.ajax('tianbar:///spawn', {
         data: {
           command: self.settings_command
         }
