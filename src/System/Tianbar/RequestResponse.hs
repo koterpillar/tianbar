@@ -7,7 +7,9 @@ module System.Tianbar.RequestResponse (
     bytestringResponse,
     jsonResponse,
     look,
+    lookBS,
     looks,
+    looksBS,
     okResponse,
     parseURI,
     serveFile,
@@ -75,14 +77,20 @@ serveFile filePath = do
     return $ Response contents (Just $ U.toString fileType)
 
 look :: (MonadPlus m, MonadReader URI m) => String -> m String
-look param = looks param >>= \values -> case values of
+look = fmap U.toString . lookBS
+
+looks :: (MonadPlus m, MonadReader URI m) => String -> m [String]
+looks = fmap (map U.toString) . looksBS
+
+lookBS :: (MonadPlus m, MonadReader URI m) => String -> m B.ByteString
+lookBS param = looksBS param >>= \values -> case values of
                [value] -> return value
                _ -> mzero
 
-looks :: (MonadPlus m, MonadReader URI m) => String -> m [String]
-looks param = asks uriQuery >>= \params -> do
+looksBS :: (MonadPlus m, MonadReader URI m) => String -> m [B.ByteString]
+looksBS param = asks uriQuery >>= \params -> do
     let paramTxt = U.fromString param
-    let isParam (p, value) | p == paramTxt = fmap U.toString value
+    let isParam (p, value) | p == paramTxt = value
                            | otherwise = Nothing
     return $ mapMaybe isParam params
 
