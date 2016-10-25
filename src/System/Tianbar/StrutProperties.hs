@@ -14,7 +14,6 @@ import GI.Gdk.Objects.Window
 import GI.Gdk.Structs.Atom
 
 import Foreign
-import Foreign.C.Types
 
 type StrutProperties = (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)
 

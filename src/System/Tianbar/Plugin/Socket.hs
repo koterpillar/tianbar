@@ -10,9 +10,11 @@ import Control.Monad.IO.Class
 import Control.Monad.State
 import Control.Monad.Trans.Maybe
 
+import qualified Data.ByteString.UTF8 as U
 import qualified Data.Map as M
 
 import Network.Socket
+import qualified Network.Socket.ByteString as SB
 
 import System.Tianbar.Callbacks
 import System.Tianbar.Plugin
@@ -42,8 +44,8 @@ connectHandler = dir "connect" $ do
         return s
     (callback, index) <- newCallback
     _ <- liftIO $ forkIO $ void $ forever $ do
-        sockData <- recv sock 4096
-        liftIO $ callback [sockData]
+        sockData <- SB.recv sock 4096
+        liftIO $ callback [U.toString sockData]
         return ()
     spSock . at index .= Just sock
     callbackResponse index
@@ -53,9 +55,9 @@ sendHandler = dir "send" $ do
     nullDir
     index <- fromData
     sock <- MaybeT $ getSocket index
-    dataToSend <- look "data"
+    dataToSend <- lookBS "data"
     -- TODO: resend until done
-    _ <- liftIO $ send sock dataToSend
+    _ <- liftIO $ SB.send sock dataToSend
     callbackResponse index
 
 closeHandler :: ServerPart SocketPlugin Response
