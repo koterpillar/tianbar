@@ -17,13 +17,20 @@ define(['jquery', './tianbar'], function ($, tianbar) {
     return {
       /**
        * Listen for a particular DBus event.
-       * @param match {Object} DBus match conditions ('path', 'iface', 'member')
+       * @param match {Object} DBus match conditions ('path', 'iface',
+       * 'member'), as well as 'direct' to only add the listener without
+       * calling AddMatch (for direct connections)
        * @param handler {Function} The function to call upon receiving the event
        * @returns {Deferred} Promise to be fulfilled with a Tianbar event object
        */
       listen: function (match) {
         var data = {};
-        copyProperties(['path', 'iface', 'member'], match, data);
+        copyProperties([
+          'path',
+          'iface',
+          'member',
+          'direct'
+        ], match, data);
         return $.ajax('tianbar:///dbus/' + busName + '/listen', {
           data: data
         }).then(tianbar.createEvent).then(function (evt) {
