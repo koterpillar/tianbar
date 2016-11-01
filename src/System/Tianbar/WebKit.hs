@@ -60,10 +60,11 @@ tianbarWebView = do
     server <- startServer wk >>= newMVar
     -- TODO: Destroy server (stopServer) on destroying the WebView
 
-    -- All Tianbar plugins are served under tianbar://, allow it for CORS and
-    -- register its handler
+    -- All Tianbar plugins are served under tianbar://, mark it as secure,
+    -- allow CORS and register its handler
     ctx <- webViewGetContext wk
     sec <- webContextGetSecurityManager ctx
+    securityManagerRegisterUriSchemeAsSecure sec "tianbar"
     securityManagerRegisterUriSchemeAsCorsEnabled sec "tianbar"
     webContextRegisterUriScheme ctx "tianbar" (handleRequest server)
 
