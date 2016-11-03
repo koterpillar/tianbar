@@ -3,6 +3,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module System.Tianbar.Plugin.DBus.JSON () where
 
+import Control.Applicative
+
 import Data.Aeson hiding (Array)
 import qualified Data.Aeson.Types as A
 import qualified Data.HashMap.Strict as HM
@@ -61,8 +63,14 @@ instance FromJSON Variant where
               integerValue = S.coefficient n * (10 ^ S.base10Exponent n)
     parseJSON (String s) = pure $ toVariant s
     parseJSON (A.Array a) = toVariant <$> (mapM parseJSON (V.toList a) :: A.Parser [Variant])
-    parseJSON (Object o) = toVariant <$> (mapM parseJSON o :: A.Parser (HM.HashMap T.Text Variant))
+    parseJSON v@(Object o) = parseObjectPathJSON v <|> parseMapJSON o
     parseJSON val = A.typeMismatch "Variant" val
+
+parseObjectPathJSON :: Value -> A.Parser Variant
+parseObjectPathJSON v = toVariant <$> (parseJSON v :: A.Parser ObjectPath)
+
+parseMapJSON :: Object -> A.Parser Variant
+parseMapJSON o = toVariant <$> (mapM parseJSON o :: A.Parser (HM.HashMap T.Text Variant))
 
 variantString :: Variant -> String
 variantString v = s
@@ -75,8 +83,20 @@ variantString v = s
 variantStringKey :: (Variant, Variant) -> (String, Variant)
 variantStringKey (k, v) = (variantString k, v)
 
+parseStringMarker :: T.Text -> (String -> Maybe a) -> Value -> A.Parser a
+parseStringMarker marker parseFunc = withObject "Object expected" $ \o ->
+        (parseFunc <$> o .: marker) >>= maybeParse
+    where maybeParse Nothing = empty
+          maybeParse (Just v) = pure v
+
+formatStringMarker :: T.Text -> (a -> String) -> a -> Value
+formatStringMarker marker formatFunc val = object [marker .= formatFunc val]
+
 instance ToJSON ObjectPath where
-    toJSON = toJSON . formatObjectPath
+    toJSON = formatStringMarker "__object_path" formatObjectPath
+
+instance FromJSON ObjectPath where
+    parseJSON = parseStringMarker "__object_path" parseObjectPath
 
 instance ToJSON InterfaceName where
     toJSON = toJSON . formatInterfaceName

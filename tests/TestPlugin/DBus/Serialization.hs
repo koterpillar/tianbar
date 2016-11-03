@@ -36,9 +36,17 @@ limitedArbitrary = oneof [ toVariant <$> (arbitrary :: Gen Bool)
                          , toVariant <$> (arbitrary :: Gen Int64)
                          , toVariant <$> (arbitrary :: Gen Double)
                          , toVariant <$> (T.pack <$> (arbitrary :: Gen String))
+                         , toVariant <$> (arbitrary :: Gen ObjectPath)
                          , (toVariant . map lvVariant) <$> (half $ arbitrary :: Gen [LimitedVariant])
                          , (toVariant . M.map lvVariant) <$> (half $ arbitrary :: Gen (M.Map String LimitedVariant))]
     where half = scale (`div` 2)
+
+instance Arbitrary ObjectPath where
+    arbitrary = (fromJust . parseObjectPath  . concatPath) <$> listOf1 arbitraryAlpha
+        where concatPath :: [String] -> String
+              concatPath = concat . map ('/':)
+              arbitraryAlpha :: Gen String
+              arbitraryAlpha = listOf1 $ elements ['a'..'z']
 
 jsonRoundTrip :: TestTree
 jsonRoundTrip = QC.testProperty "Variant's FromJSON and ToJSON are inverse of each other" $
