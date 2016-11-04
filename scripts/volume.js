@@ -116,6 +116,26 @@ define(['jquery', './dbus'], function ($, dbus) {
         );
       }
 
+      function subscribe(sink, eventName) {
+        bus.call({
+          path: core_path,
+          iface: 'org.PulseAudio.Core1',
+          member: 'ListenForSignal',
+          body: [
+            'org.PulseAudio.Core1.Device.' + eventName,
+            [sink]
+          ]
+        }).then(function () {
+          bus.listen({
+            member: eventName,
+            direct: true
+          }).then(function (evt) {
+            evt.add(refresh);
+          });
+        });
+      }
+
+      // TODO: monitor changes to sinks
       bus.getProperty(
         'org.PulseAudio.Core1',
         core_path,
@@ -126,9 +146,18 @@ define(['jquery', './dbus'], function ($, dbus) {
           // No sound
           return [[0], true];
         } else {
+          const sink = sinks[0];
+
+          // Subscribe the updates for this sink
+          if (!seenSinks[dbus.fromObjectPath(sink)]) {
+            seenSinks[dbus.fromObjectPath(sink)] = true;
+            subscribe(sink, 'VolumeUpdated');
+            subscribe(sink, 'MuteUpdated');
+          }
+
           return $.when(
-            get_device_property(sinks[0], 'Volume'),
-            get_device_property(sinks[0], 'Mute')
+            get_device_property(sink, 'Volume'),
+            get_device_property(sink, 'Mute')
           );
         }
       }).then(function (volumes, mute) {
@@ -137,8 +166,6 @@ define(['jquery', './dbus'], function ($, dbus) {
         self.volume = volume / MAX_VOLUME;
         self.mute = mute;
         self.display();
-
-        window.setTimeout(refresh, 1000);
       });
     }
 
