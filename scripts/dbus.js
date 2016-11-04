@@ -59,7 +59,8 @@ define(['jquery', './tianbar'], function ($, tianbar) {
       call: function (params) {
         var data = {};
         copyProperties(
-            ['path', 'iface', 'member', 'destination', 'body'], params, data);
+            ['path', 'iface', 'member', 'destination'], params, data);
+        data.body = JSON.stringify(params.body);
         // Prevent caching
         data.random = new Date().getTime();
         var deferred = $.Deferred();
@@ -69,7 +70,7 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         }).done(function (result) {
           result = JSON.parse(result);
           if (result.Right) {
-            deferred.resolve(result.Right);
+            deferred.resolve(result.Right.body.map(val => val.__variant)[0]);
           } else {
             deferred.reject(result.Left);
           }
@@ -94,11 +95,9 @@ define(['jquery', './tianbar'], function ($, tianbar) {
           'iface': 'org.freedesktop.DBus.Properties',
           'member': 'Get',
           'body': [
-            'string:' + object,
-            'string:' + property
+            object,
+            property
           ]
-        }).then(function (result) {
-          return result.body[0];
         });
       },
 
@@ -117,10 +116,8 @@ define(['jquery', './tianbar'], function ($, tianbar) {
           'iface': 'org.freedesktop.DBus.Properties',
           'member': 'GetAll',
           'body': [
-            'string:' + object
+            { __object_path: object },
           ]
-        }).then(function (result) {
-          return result.body[0];
         });
       }
     };

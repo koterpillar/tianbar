@@ -243,8 +243,6 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       'body': [
       ]
     }).done(function (devices) {
-      devices = devices.body[0];
-
       // Add the display device
       devices.push(self.DISPLAY_DEVICE);
 
