@@ -45,7 +45,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     Phone: 8
   };
 
-  self.DISPLAY_DEVICE = '/org/freedesktop/UPower/devices/DisplayDevice';
+  self.DISPLAY_DEVICE = dbus.toObjectPath('/org/freedesktop/UPower/devices/DisplayDevice');
 
   self.widget = () => $('.widget-power');
 
@@ -95,7 +95,8 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
     }
 
     // Ignore the batteries which are not the (combined) display device
-    if (st.Type == self.DEVICE_TYPE.Battery && path !== self.DISPLAY_DEVICE) {
+    if (st.Type == self.DEVICE_TYPE.Battery &&
+        dbus.fromObjectPath(path) !== dbus.fromObjectPath(self.DISPLAY_DEVICE)) {
       return '';
     }
 
@@ -222,11 +223,11 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
 
     widget.empty();
     self.devices.forEach(function (path) {
-      if (!self.deviceProperties[path]) {
+      if (!self.deviceProperties[dbus.fromObjectPath(path)]) {
         // Device is active but no data yet
         return;
       }
-      widget.append(self.formatDevice(path, self.deviceProperties[path]));
+      widget.append(self.formatDevice(path, self.deviceProperties[dbus.fromObjectPath(path)]));
     });
 
     self.updated.fire();
@@ -236,7 +237,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
   self.refresh = function () {
     dbus.system.call({
       'destination': 'org.freedesktop.UPower',
-      'path': '/org/freedesktop/UPower',
+      'path': dbus.toObjectPath('/org/freedesktop/UPower'),
       'iface': 'org.freedesktop.UPower',
       'member': 'EnumerateDevices',
       'body': [
@@ -260,7 +261,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
       path,
       'org.freedesktop.UPower.Device'
     ).done(function (properties) {
-      if (!self.deviceProperties[path]) {
+      if (!self.deviceProperties[dbus.fromObjectPath(path)]) {
         // New device never seen before, listen for changes
         dbus.system.listen(
           { path: path }
@@ -271,7 +272,7 @@ define(['jquery', 'moment', './dbus'], function ($, moment, dbus) {
         });
       }
 
-      self.deviceProperties[path] = properties;
+      self.deviceProperties[dbus.fromObjectPath(path)] = properties;
       self.display();
     });
   };

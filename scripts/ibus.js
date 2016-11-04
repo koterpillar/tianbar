@@ -23,7 +23,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
     bus.getProperty(
       'org.freedesktop.IBus',
-      '/org/freedesktop/IBus',
+      dbus.toObjectPath('/org/freedesktop/IBus'),
       'org.freedesktop.IBus',
       'GlobalEngine'
     ).then(function (result) {

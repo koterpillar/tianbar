@@ -97,13 +97,15 @@ define(['jquery', './dbus'], function ($, dbus) {
   }).then(function () {
     return dbus.session.getProperty(
       'org.PulseAudio1',
-      '/org/pulseaudio/server_lookup1',
+      dbus.toObjectPath('/org/pulseaudio/server_lookup1'),
       'org.PulseAudio.ServerLookup1',
       'Address'
     );
   }).then(function (bus_address) {
     return dbus.connect(bus_address);
   }).then(function (bus) {
+    const core_path = dbus.toObjectPath('/org/pulseaudio/core1');
+    const seenSinks = {};
     function refresh() {
       function get_device_property(sink, name) {
         return bus.getProperty(
@@ -116,7 +118,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
       bus.getProperty(
         'org.PulseAudio.Core1',
-        '/org/pulseaudio/core1',
+        core_path,
         'org.PulseAudio.Core1',
         'Sinks'
       ).then(function (sinks) {

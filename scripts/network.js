@@ -8,6 +8,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   const INACTIVE_COLOR = '#999';
 
+  const NM_OBJECT = dbus.toObjectPath('/org/freedesktop/NetworkManager');
   self.settings_command = 'gnome-control-center network';
 
   self.widget = function () {
@@ -242,7 +243,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
     const get_obj_property = (iface, prop) => get_nm_property(conn_object, iface, prop);
 
-    if (/AccessPoint/.test(conn_object)) {
+    if (/AccessPoint/.test(dbus.fromObjectPath(conn_object))) {
       $.when(
         get_obj_property('org.freedesktop.NetworkManager.AccessPoint', 'Strength')
       ).done(function (strength) {
@@ -304,7 +305,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   self.refresh = function () {
     get_nm_property(
-      '/org/freedesktop/NetworkManager',
+      NM_OBJECT,
       'org.freedesktop.NetworkManager',
       'PrimaryConnection'
     ).done(function (conn) {
@@ -325,7 +326,7 @@ define(['jquery', './dbus'], function ($, dbus) {
       });
     });
 
-    watch_properties('/org/freedesktop/NetworkManager').then(function (evt) {
+    watch_properties(NM_OBJECT).then(function (evt) {
       evt.add(self.refresh);
     });
     self.refresh();
