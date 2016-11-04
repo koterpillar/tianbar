@@ -1,4 +1,3 @@
-/* jshint esversion: 6 */
 define(['jquery', './dbus'], function ($, dbus) {
   "use strict";
 

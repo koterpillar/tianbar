@@ -1,4 +1,3 @@
-/* jshint esversion: 6 */
 /*
  * A plugin to show the power (e.g. battery) state through UPower.
  *
