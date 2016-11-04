@@ -1,13 +1,15 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module System.Tianbar.Plugin.DBus.FromData () where
 
-import Data.List.Split
+import Data.Aeson
+import Data.ByteString.Lazy as LBS
 import Data.Maybe
 
 import DBus
 import DBus.Client
 
 import System.Tianbar.Plugin
+import System.Tianbar.Plugin.DBus.JSON ()
 
 instance FromData MatchRule where
     fromData = do
@@ -26,7 +28,7 @@ instance FromData MethodCall where
         callPath <- fromData
         iface <- fromData
         member <- fromData
-        callBody <- map variantFromString <$> looks "body[]"
+        callBody <- (fromJust . decode . LBS.fromStrict) <$> lookBS "body"
         dest <- fromData
         let setBodyDest mcall = mcall { methodCallBody = callBody
                                       , methodCallDestination = dest
@@ -44,8 +46,3 @@ instance FromData MemberName where
 
 instance FromData BusName where
     fromData = fromJust . parseBusName <$> look "destination"
-
-variantFromString :: String -> Variant
-variantFromString param = case splitOn ":" param of
-    ["string", str] -> toVariant str
-    _ -> error $ "Invalid variant string: " ++ show param

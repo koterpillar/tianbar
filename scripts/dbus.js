@@ -13,17 +13,51 @@ define(['jquery', './tianbar'], function ($, tianbar) {
     });
   }
 
+  function stripVariants(obj) {
+    if (obj.hasOwnProperty('__variant')) {
+      return stripVariants(obj.__variant);
+    }
+    if (obj instanceof Array) {
+      return obj.map(stripVariants);
+    }
+    if (obj instanceof Object) {
+      const result = {};
+      for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          result[key] = stripVariants(obj[key]);
+        }
+      }
+      return result;
+    }
+    return obj;
+  }
+
+  function toObjectPath (str) {
+    return {__object_path: str};
+  }
+
+  function fromObjectPath (op) {
+    return op.__object_path;
+  }
+
   function bus(busName) {
     return {
       /**
        * Listen for a particular DBus event.
-       * @param match {Object} DBus match conditions ('path', 'iface', 'member')
+       * @param match {Object} DBus match conditions ('path', 'iface',
+       * 'member'), as well as 'direct' to only add the listener without
+       * calling AddMatch (for direct connections)
        * @param handler {Function} The function to call upon receiving the event
        * @returns {Deferred} Promise to be fulfilled with a Tianbar event object
        */
       listen: function (match) {
         var data = {};
-        copyProperties(['path', 'iface', 'member'], match, data);
+        copyProperties([
+          'path',
+          'iface',
+          'member',
+          'direct'
+        ], match, data);
         return $.ajax('tianbar:///dbus/' + busName + '/listen', {
           data: data
         }).then(tianbar.createEvent).then(function (evt) {
@@ -52,7 +86,11 @@ define(['jquery', './tianbar'], function ($, tianbar) {
       call: function (params) {
         var data = {};
         copyProperties(
-            ['path', 'iface', 'member', 'destination', 'body'], params, data);
+          ['iface', 'member', 'destination'], params, data);
+        if (params.path) {
+          data.path = fromObjectPath(params.path);
+        }
+        data.body = JSON.stringify(params.body);
         // Prevent caching
         data.random = new Date().getTime();
         var deferred = $.Deferred();
@@ -62,7 +100,8 @@ define(['jquery', './tianbar'], function ($, tianbar) {
         }).done(function (result) {
           result = JSON.parse(result);
           if (result.Right) {
-            deferred.resolve(result.Right);
+            result = stripVariants(result.Right.body)[0];
+            deferred.resolve(result);
           } else {
             deferred.reject(result.Left);
           }
@@ -87,11 +126,9 @@ define(['jquery', './tianbar'], function ($, tianbar) {
           'iface': 'org.freedesktop.DBus.Properties',
           'member': 'Get',
           'body': [
-            'string:' + object,
-            'string:' + property
+            object,
+            property
           ]
-        }).then(function (result) {
-          return result.body[0];
         });
       },
 
@@ -110,10 +147,8 @@ define(['jquery', './tianbar'], function ($, tianbar) {
           'iface': 'org.freedesktop.DBus.Properties',
           'member': 'GetAll',
           'body': [
-            'string:' + object
+            object
           ]
-        }).then(function (result) {
-          return result.body[0];
         });
       }
     };
@@ -150,6 +185,14 @@ define(['jquery', './tianbar'], function ($, tianbar) {
     /**
      * Connect an arbitrary bus.
      */
-    connect: connectBus
+    connect: connectBus,
+    /**
+     * Convert a string to an object path.
+     */
+    toObjectPath: toObjectPath,
+    /**
+     * Convert an object path to string.
+     */
+    fromObjectPath: fromObjectPath
   };
 });

@@ -1,16 +1,10 @@
-/* jshint esversion: 6 */
 /*
  * A widget to show and control the system volume.
  *
  * Requires 'jquery' to be available through RequireJS.
  */
-define(['jquery', './socket'], function ($, socket) {
+define(['jquery', './dbus'], function ($, dbus) {
   "use strict";
-
-  const UID_RE = /Uid:\t(\d+)/;
-
-  const VOLUME_RE = /set-sink-volume.+ ([^ \n]+)/;
-  const MUTE_RE = /set-sink-mute.+ ([^ \n]+)/;
 
   const MAX_VOLUME = 0x10000;
 
@@ -22,13 +16,6 @@ define(['jquery', './socket'], function ($, socket) {
   const self = {};
 
   self.settings_command = 'gnome-control-center sound';
-
-  function uid() {
-    return $.ajax('tianbar:///root/proc/self/status')
-    .then(function (result) {
-      return +UID_RE.exec(result)[1];
-    });
-  }
 
   self.widget = () => $('.widget-volume');
 
@@ -103,31 +90,86 @@ define(['jquery', './socket'], function ($, socket) {
     widget.attr('title', percentage + '%');
   };
 
-  $.when(
-    $.ajax('tianbar:///execute', {
-      data: {
-        command: 'pacmd load-module module-cli-protocol-unix'
+  $.ajax('tianbar:///execute', {
+    data: {
+      command: 'pacmd load-module module-dbus-protocol'
+    }
+  }).then(function () {
+    return dbus.session.getProperty(
+      'org.PulseAudio1',
+      dbus.toObjectPath('/org/pulseaudio/server_lookup1'),
+      'org.PulseAudio.ServerLookup1',
+      'Address'
+    );
+  }).then(function (bus_address) {
+    return dbus.connect(bus_address);
+  }).then(function (bus) {
+    const core_path = dbus.toObjectPath('/org/pulseaudio/core1');
+    const seenSinks = {};
+    function refresh() {
+      function get_device_property(sink, name) {
+        return bus.getProperty(
+          'org.PulseAudio.Core1',
+          sink,
+          'org.PulseAudio.Core1.Device',
+          name
+        );
       }
-    }),
-    uid()
-  ).then(function (_, uid) {
-    return socket('/var/run/user/' + uid + '/pulse/cli');
-  }).then(function (pulseSocket) {
-    pulseSocket.recv.add(function (dump) {
-      self.mute = MUTE_RE.exec(dump)[1] === "yes";
-      self.volume = parseInt(VOLUME_RE.exec(dump)[1], 16) / MAX_VOLUME;
 
-      self.display();
+      function subscribe(sink, eventName) {
+        bus.call({
+          path: core_path,
+          iface: 'org.PulseAudio.Core1',
+          member: 'ListenForSignal',
+          body: [
+            'org.PulseAudio.Core1.Device.' + eventName,
+            [sink]
+          ]
+        }).then(function () {
+          bus.listen({
+            member: eventName,
+            direct: true
+          }).then(function (evt) {
+            evt.add(refresh);
+          });
+        });
+      }
 
-      window.setTimeout(requestDump, 1000);
+      // TODO: monitor changes to sinks
+      bus.getProperty(
+        'org.PulseAudio.Core1',
+        core_path,
+        'org.PulseAudio.Core1',
+        'Sinks'
+      ).then(function (sinks) {
+        if (sinks.length === 0) {
+          // No sound
+          return [[0], true];
+        } else {
+          const sink = sinks[0];
 
-    });
+          // Subscribe the updates for this sink
+          if (!seenSinks[dbus.fromObjectPath(sink)]) {
+            seenSinks[dbus.fromObjectPath(sink)] = true;
+            subscribe(sink, 'VolumeUpdated');
+            subscribe(sink, 'MuteUpdated');
+          }
 
-    function requestDump () {
-      pulseSocket.send('dump\n');
+          return $.when(
+            get_device_property(sink, 'Volume'),
+            get_device_property(sink, 'Mute')
+          );
+        }
+      }).then(function (volumes, mute) {
+        // volume is an array of channels' volumes, average it
+        const volume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
+        self.volume = volume / MAX_VOLUME;
+        self.mute = mute;
+        self.display();
+      });
     }
 
-    requestDump();
+    refresh();
   });
 
   $(document).ready(function () {

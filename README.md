@@ -40,8 +40,8 @@ Displays the time and date.
 
 ### Volume
 
-Displays the current PulseAudio volume. Note that `module-cli-protocol-unix`
-is required to be loaded.
+Displays the current PulseAudio volume. Note that `module-dbus-protocol`
+is required to be available.
 
 ### Weather
 

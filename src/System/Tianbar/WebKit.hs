@@ -125,7 +125,7 @@ handleRequest server ureq = do
         (\e -> return $ Left (e :: SomeException))
     case response of
       Left exc -> do
-          putStrLn $ "Error on URI: " ++ T.unpack uriStr
+          putStrLn $ "Error: " ++ show exc ++ " on URI: " ++ T.unpack uriStr
           err <- tianbarError 500 (show exc)
           uRISchemeRequestFinishError ureq err
       Right Nothing -> do

@@ -5,15 +5,20 @@ module System.Tianbar.Plugin.DBus (DBusPlugin) where
 
 import Control.Lens hiding (index)
 
+import Control.Exception (handle)
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
 
 import qualified Data.Map as M
 
-import DBus (parseAddress)
+import DBus ( Signal
+            , parseAddress
+            )
 import DBus.Client ( Client
+                   , ClientError
                    , SignalHandler
+                   , MatchRule
                    , addMatch
                    , call
                    , connect
@@ -110,9 +115,25 @@ listenHandler busRef = dir "listen" $ withData $ \matcher -> do
     nullDir
     clnt <- use $ busRef . busClient
     (callback, index) <- newCallback
-    listener <- liftIO $ addMatch clnt matcher $ \sig -> callback [sig]
-    busRef . busSignals . at index .= Just listener
+    direct <- liftM (not . null) $ looks "direct"
+    if direct
+        then do
+            liftIO $ addMatchDirect clnt matcher $ \sig -> callback [sig]
+        else do
+            listener <- liftIO $ addMatch clnt matcher $ \sig -> callback [sig]
+            busRef . busSignals . at index .= Just listener
     callbackResponse index
+
+-- dbus package calls the AddMatch method on listening. This is not needed
+-- in case of a direct connection, such as to a PulseAudio bus, as the
+-- signals will be delivered anyway. The method call, however, will crash
+-- and must be ignored.
+addMatchDirect :: Client -> MatchRule -> (Signal -> IO ()) -> IO ()
+addMatchDirect client matcher sighandler = handle ignore $ do
+        _ <- addMatch client matcher sighandler
+        return ()
+    where ignore :: ClientError -> IO ()
+          ignore _ = return ()
 
 stopHandler :: BusReference -> ServerPart DBusPlugin Response
 stopHandler busRef = dir "stop" $ do

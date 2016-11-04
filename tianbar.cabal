@@ -50,9 +50,12 @@ executable tianbar
                      , network
                      , process
                      , random
+                     , scientific
                      , split
                      , text
                      , transformers
+                     , vector
+                     , unordered-containers
                      , utf8-string
                      , xdg-basedir
   pkgconfig-depends:   gtk+-3.0
@@ -71,6 +74,7 @@ executable tianbar
                      , System.Tianbar.Plugin.DBus
                      , System.Tianbar.Plugin.DBus.FromData
                      , System.Tianbar.Plugin.DBus.JSON
+                     , System.Tianbar.Plugin.DBus.Utils
                      , System.Tianbar.Plugin.GSettings
                      , System.Tianbar.Plugin.Socket
                      , System.Tianbar.RequestResponse
@@ -89,6 +93,61 @@ library
   hs-source-dirs:      src
   exposed-modules:     System.Tianbar.XMonadLog
   ghc-options:         -Wall
+
+test-suite tests
+  default-language:    Haskell2010
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      src, tests
+  main-is:             TestMain.hs
+  build-depends:       base >3 && <5
+                     , tasty
+                     , tasty-quickcheck
+                     , aeson
+                     , bytestring
+                     , containers
+                     , directory
+                     , dbus
+                     , filepath
+                     , haskell-gi-base
+                     , http-types
+                     , gi-gdk
+                     , gi-gio
+                     , gi-glib
+                     , gi-gtk
+                     , gi-webkit2
+                     , lens
+                     , mime-types
+                     , mtl
+                     , network
+                     , process
+                     , random
+                     , scientific
+                     , split
+                     , text
+                     , transformers
+                     , vector
+                     , unordered-containers
+                     , utf8-string
+                     , xdg-basedir
+  other-modules:       System.Tianbar
+                     , System.Tianbar.Callbacks
+                     , System.Tianbar.Configuration
+                     , System.Tianbar.Server
+                     , System.Tianbar.StrutProperties
+                     , System.Tianbar.Plugin
+                     , System.Tianbar.Plugin.All
+                     , System.Tianbar.Plugin.Combined
+                     , System.Tianbar.Plugin.FileSystem
+                     , System.Tianbar.Plugin.ExecuteCommand
+                     , System.Tianbar.Plugin.DBus
+                     , System.Tianbar.Plugin.DBus.FromData
+                     , System.Tianbar.Plugin.DBus.JSON
+                     , System.Tianbar.Plugin.DBus.Utils
+                     , System.Tianbar.Plugin.GSettings
+                     , System.Tianbar.Plugin.Socket
+                     , System.Tianbar.RequestResponse
+                     , System.Tianbar.WebKit
+                     , TestPlugin.DBus.Serialization
 
 source-repository head
   type:                git
