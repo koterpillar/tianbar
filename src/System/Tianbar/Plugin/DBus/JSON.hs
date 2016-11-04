@@ -18,6 +18,8 @@ import Data.Word
 
 import DBus
 
+import System.Tianbar.Plugin.DBus.Utils
+
 fromVariantJust :: IsVariant v => Variant -> v
 fromVariantJust = fromJust . fromVariant
 
@@ -39,7 +41,7 @@ instance ToJSON Variant where
 
             TypeUnixFd -> toJSON (fromVariantJust v :: Word32)
 
-            TypeVariant -> toJSON (fromVariantJust v :: Variant)
+            TypeVariant -> formatStringMarker "__variant" (fromVariantJust :: Variant -> Variant) v
             TypeArray _ -> toJSON (arrayItems $ fromVariantJust v)
             TypeDictionary _ _ -> toJSON $ M.fromList $ map variantStringKey $
                 dictionaryItems $ fromVariantJust v
@@ -56,21 +58,49 @@ instance IsValue v => IsVariant (HM.HashMap T.Text v) where
     fromVariant = fmap (HM.fromList . M.toList) . fromVariant
 
 instance FromJSON Variant where
-    parseJSON (Bool b) = pure $ toVariant b
-    parseJSON (Number n) | S.base10Exponent n < 0 = pure $ toVariant doubleValue
-                         | otherwise = pure $ toVariant (fromIntegral integerValue :: Int64)
-        where doubleValue = S.toRealFloat n :: Double
-              integerValue = S.coefficient n * (10 ^ S.base10Exponent n)
-    parseJSON (String s) = pure $ toVariant s
-    parseJSON (A.Array a) = toVariant <$> (mapM parseJSON (V.toList a) :: A.Parser [Variant])
-    parseJSON v@(Object o) = parseObjectPathJSON v <|> parseMapJSON o
-    parseJSON val = A.typeMismatch "Variant" val
+    parseJSON v = snd <$> parseSimpleVairant v
+              <|> parseArrayVariant v
+              <|> parseDictVariant v
+
+parseSimpleVairant :: Value -> A.Parser (Type, Variant)
+parseSimpleVairant (Bool b) = pure $ (TypeBoolean, toVariant b)
+parseSimpleVairant (Number n) | S.base10Exponent n < 0 = pure $ (TypeDouble, toVariant doubleValue)
+                              | otherwise = pure $ (TypeInt64, toVariant (fromIntegral integerValue :: Int64))
+    where doubleValue = S.toRealFloat n :: Double
+          integerValue = S.coefficient n * (10 ^ S.base10Exponent n)
+parseSimpleVairant (String s) = pure $ (TypeString, toVariant s)
+parseSimpleVairant v = (,) TypeObjectPath <$> parseObjectPathJSON v
+                   <|> (,) TypeVariant <$> parseNestedVariant v
 
 parseObjectPathJSON :: Value -> A.Parser Variant
 parseObjectPathJSON v = toVariant <$> (parseJSON v :: A.Parser ObjectPath)
 
-parseMapJSON :: Object -> A.Parser Variant
-parseMapJSON o = toVariant <$> (mapM parseJSON o :: A.Parser (HM.HashMap T.Text Variant))
+parseNestedVariant :: Value -> A.Parser Variant
+parseNestedVariant v = (toVariant :: Variant -> Variant) <$> (parseStringMarker "__variant" Just v)
+
+parseArrayVariant :: Value -> A.Parser Variant
+parseArrayVariant v@(A.Array a) = mapM parseSimpleVairant (V.toList a) >>= makeArray
+    where makeArray items = case commonType items of
+            Just typ -> pure $ unwrapVariantsType typ (map snd items)
+            Nothing -> A.typeMismatch "items in array" v
+parseArrayVariant val = A.typeMismatch "parseArrayVariant" val
+
+commonType :: [(Type, Variant)] -> Maybe Type
+commonType [] = Just TypeVariant  -- all empty arrays are the same
+commonType ((typ, _):rest) | all (typ ==) (map fst rest) = Just typ
+                           | otherwise = Nothing
+
+parseDictVariant :: Value -> A.Parser Variant
+parseDictVariant v@(Object o) = do
+        let (keys, values) = unzip $ HM.toList o
+        values' <- mapM parseSimpleVairant values
+        let dict = M.fromList $ zip keys values'
+        makeDict dict
+    where makeDict :: M.Map T.Text (Type, Variant) -> A.Parser Variant
+          makeDict items = case commonType (M.elems items) of
+              Just typ -> pure $ unwrapVariantsType typ (M.map snd items)
+              Nothing -> A.typeMismatch "items in dictionary" v
+parseDictVariant val = A.typeMismatch "parseDictVariant" val
 
 variantString :: Variant -> String
 variantString v = s
@@ -83,13 +113,13 @@ variantString v = s
 variantStringKey :: (Variant, Variant) -> (String, Variant)
 variantStringKey (k, v) = (variantString k, v)
 
-parseStringMarker :: T.Text -> (String -> Maybe a) -> Value -> A.Parser a
+parseStringMarker :: FromJSON v => T.Text -> (v -> Maybe a) -> Value -> A.Parser a
 parseStringMarker marker parseFunc = withObject "Object expected" $ \o ->
         (parseFunc <$> o .: marker) >>= maybeParse
     where maybeParse Nothing = empty
           maybeParse (Just v) = pure v
 
-formatStringMarker :: T.Text -> (a -> String) -> a -> Value
+formatStringMarker :: ToJSON v => T.Text -> (a -> v) -> a -> Value
 formatStringMarker marker formatFunc val = object [marker .= formatFunc val]
 
 instance ToJSON ObjectPath where

@@ -74,6 +74,7 @@ executable tianbar
                      , System.Tianbar.Plugin.DBus
                      , System.Tianbar.Plugin.DBus.FromData
                      , System.Tianbar.Plugin.DBus.JSON
+                     , System.Tianbar.Plugin.DBus.Utils
                      , System.Tianbar.Plugin.GSettings
                      , System.Tianbar.Plugin.Socket
                      , System.Tianbar.RequestResponse
@@ -141,6 +142,7 @@ test-suite tests
                      , System.Tianbar.Plugin.DBus
                      , System.Tianbar.Plugin.DBus.FromData
                      , System.Tianbar.Plugin.DBus.JSON
+                     , System.Tianbar.Plugin.DBus.Utils
                      , System.Tianbar.Plugin.GSettings
                      , System.Tianbar.Plugin.Socket
                      , System.Tianbar.RequestResponse
