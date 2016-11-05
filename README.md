@@ -1,6 +1,9 @@
 Tianbar
 =======
 
+[![Build status](https://img.shields.io/travis/aloetesting/aloe.svg)](https://travis-ci.org/aloetesting/aloe)
+[![Hackage](https://img.shields.io/hackage/v/tianbar.svg)](http://hackage.haskell.org/package/tianbar)
+
 Tianbar is a status bar for XMonad and possibly similar window managers. It is
 using WebKit as its rendering engine, meaning that the entire look and feel is
 customizable using HTML, CSS and JavaScript.
