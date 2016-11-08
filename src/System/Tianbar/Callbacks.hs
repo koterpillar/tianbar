@@ -21,6 +21,9 @@ import Data.Monoid
 
 import GI.Gio.Objects.Cancellable
 
+import GI.GLib.Constants
+import GI.GLib.Functions
+
 import GI.WebKit2.Objects.WebView
 
 import qualified Data.Text.Lazy as TL
@@ -46,11 +49,14 @@ class CallbackHost h where
     callback :: (ToJSON i, ToJSON r) => h -> i -> Callback r
 
 instance CallbackHost WebView where
-    callback wk idx param =
-        webViewRunJavascript wk
-            (TL.toStrict $ callbackScript idx param)
-            noCancellable
-            Nothing
+    callback wk idx param = do
+        _ <- idleAdd PRIORITY_DEFAULT_IDLE $ do
+            webViewRunJavascript wk
+                (TL.toStrict $ callbackScript idx param)
+                noCancellable
+                Nothing
+            return False
+        return ()
 
 callbackScript :: (ToJSON i, ToJSON r) => i -> r -> TL.Text
 callbackScript idx param =
