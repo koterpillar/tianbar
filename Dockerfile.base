@@ -31,7 +31,8 @@ RUN \
 ADD stack.yaml /root/.stack/global-project/stack.yaml
 RUN sed -i "s/packages:/packages: []/;/- '\.'/d" /root/.stack/global-project/stack.yaml
 
-RUN stack build haskell-gi-base
+# gi-* packages depend on haskell-gi but somehow don't declare it
+RUN stack build haskell-gi
 RUN stack build xmonad
 RUN stack build lens
 RUN stack build gi-webkit2
