@@ -236,7 +236,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   function refresh_connection_object(conn, conn_object) {
     if (dbus.fromObjectPath(conn) != self.connection.id ||
-        dbus.fromObjectPath(conn_object) != self.connection.specific_object) {
+        dbus.fromObjectPath(conn_object) != dbus.fromObjectPath(self.connection.specific_object)) {
       // Stale signal from an old connection or device
       return;
     }
