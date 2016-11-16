@@ -27,7 +27,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   const ConnectionType = {
     WiFi: '802-11-wireless',
-    VPN: 'vpn',
+    VPN: 'vpn'
     // TODO: More types
   };
 
@@ -210,7 +210,7 @@ define(['jquery', './dbus'], function ($, dbus) {
   };
 
   self.connection = {
-    id: null,
+    id: null
   };
 
   // Remove stale information about the connection
@@ -235,8 +235,8 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   function refresh_connection_object(conn, conn_object) {
-    if (conn != self.connection.id ||
-      conn_object != self.connection.specific_object) {
+    if (dbus.fromObjectPath(conn) != self.connection.id ||
+        dbus.fromObjectPath(conn_object) != self.connection.specific_object) {
       // Stale signal from an old connection or device
       return;
     }
@@ -254,7 +254,7 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   function refresh_connection(conn) {
-    if (conn != self.connection.id) {
+    if (dbus.fromObjectPath(conn) != self.connection.id) {
       // Stale signal from an old connection which isn't the one we want
       // anymore
       return;
@@ -277,7 +277,7 @@ define(['jquery', './dbus'], function ($, dbus) {
       self.connection.state = conn_state;
       self.connection.specific_object = conn_object;
 
-      if (conn_object != '/') {
+      if (dbus.fromObjectPath(conn_object) != '/') {
         watch_properties(conn_object).then(function (evt) {
           evt.add(function () {
             refresh_connection_object(conn, conn_object); });
@@ -290,7 +290,7 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   function subscribe_to_connection(conn) {
-    if (conn == '/') {
+    if (dbus.fromObjectPath(conn) == '/') {
       // No connection
       self.connection.type = null;
       self.connection.state = NMActiveConnectionState.Deactivated;
@@ -309,8 +309,8 @@ define(['jquery', './dbus'], function ($, dbus) {
       'org.freedesktop.NetworkManager',
       'PrimaryConnection'
     ).done(function (conn) {
-      if (self.connection.id != conn) {
-        self.connection.id = conn;
+      if (self.connection.id != dbus.fromObjectPath(conn)) {
+        self.connection.id = dbus.fromObjectPath(conn);
         reset_connection();
         subscribe_to_connection(conn);
       }
