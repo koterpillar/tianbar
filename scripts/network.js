@@ -27,7 +27,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   const ConnectionType = {
     WiFi: '802-11-wireless',
-    VPN: 'vpn',
+    VPN: 'vpn'
     // TODO: More types
   };
 
@@ -210,7 +210,7 @@ define(['jquery', './dbus'], function ($, dbus) {
   };
 
   self.connection = {
-    id: null,
+    id: null
   };
 
   // Remove stale information about the connection
