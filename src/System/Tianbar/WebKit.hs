@@ -9,8 +9,6 @@ import qualified Data.Text as T
 import Data.GI.Base
 
 import GI.Gdk.Flags
-import GI.Gdk.Objects.Display
-import GI.Gdk.Objects.Screen
 import GI.Gdk.Structs.Geometry
 import GI.Gdk.Structs.Rectangle
 
@@ -163,13 +161,6 @@ tianbarWebkitNew = do
     wv <- tianbarWebView
 
     _ <- onWidgetRealize wv $ loadIndexPage wv
-
-    Just disp <- displayGetDefault
-    screen <- displayGetDefaultScreen disp
-    monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
-    monitorW <- get monitorSize rectangleWidth
-
-    widgetSetSizeRequest wv (monitorW `div` 2) (fromIntegral barHeight)
 
     widgetShowAll wv
     toWidget wv

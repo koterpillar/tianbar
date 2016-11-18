@@ -14,19 +14,22 @@ RUN \
 
 RUN stack setup
 
-RUN \
-    dnf -y install \
+RUN dnf -y install \
         cairo-devel \
         gobject-introspection-devel \
-        gtk3-devel \
         libX11-devel \
         libXft-devel \
         libxml2-devel \
         libXrandr-devel \
+    && true
+
+# Install Gtk from rawhide
+RUN dnf -y install fedora-repos-rawhide
+RUN dnf -y install --enablerepo rawhide \
+        gtk3-devel \
         webkitgtk4-jsc-devel \
         webkitgtk4-devel \
-    && \
-    true
+    && true
 
 ADD stack.yaml /root/.stack/global-project/stack.yaml
 RUN sed -i "s/packages:/packages: []/;/- '\.'/d" /root/.stack/global-project/stack.yaml

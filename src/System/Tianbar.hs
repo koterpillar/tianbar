@@ -1,12 +1,14 @@
 module System.Tianbar where
 
 import Data.GI.Base
+import Data.Int
 import qualified Data.Text as T
 
 import GI.Gdk.Enums hiding (WindowTypeToplevel)
 import GI.Gdk.Objects.Display
+import GI.Gdk.Objects.Monitor
 import GI.Gdk.Objects.Screen
-import GI.Gdk.Structs.Rectangle
+import qualified GI.Gdk.Structs.Rectangle as R
 
 import GI.Gtk.Enums
 import qualified GI.Gtk.Functions as GtkFunctions
@@ -22,38 +24,44 @@ import System.Tianbar.StrutProperties
 import System.Tianbar.WebKit
 
 
-topStrut :: Rectangle -> IO StrutProperties
-topStrut rect = do
-    mX <- get rect rectangleX
-    mY <- get rect rectangleY
-    mW <- get rect rectangleWidth
-    let x = fromIntegral mX
-        w = fromIntegral mW - 1
-        h = barHeight + fromIntegral mY
-     in return (0, 0, h, 0, 0, 0, 0, 0, x, x + w, 0, 0)
+data Rectangle = Rectangle { rX :: Int32
+                           , rY :: Int32
+                           , rW :: Int32
+                           , rH :: Int32
+                           }
+
+-- The rectangle Tianbar should occupy on the display
+tianbarRectangle :: IO Rectangle
+tianbarRectangle = do
+    Just disp <- displayGetDefault
+    Just monitor <- displayGetPrimaryMonitor disp
+    monitorSize <- monitorGetGeometry monitor
+
+    monitorX <- get monitorSize R.rectangleX
+    monitorY <- get monitorSize R.rectangleY
+    monitorW <- get monitorSize R.rectangleWidth
+
+    return $ Rectangle monitorX monitorY monitorW (fromIntegral barHeight)
+
+
+topStrut :: Rectangle -> StrutProperties
+topStrut rect = (0, 0, barHeight, 0,
+                 0, 0,
+                 0, 0,
+                 xStart, xEnd,
+                 0, 0)
+    where xStart = fromIntegral $ rX rect
+          xEnd = fromIntegral $ rX rect + rW rect - 1
 
 
 sizeMainWindow :: Window -> IO ()
 sizeMainWindow window = do
-    Just disp <- displayGetDefault
-    screen <- displayGetDefaultScreen disp
-    monitorSize <- screenGetMonitorGeometry screen (fromIntegral myMonitor)
+    size <- tianbarRectangle
 
-    monitorX <- get monitorSize rectangleX
-    monitorY <- get monitorSize rectangleY
-    monitorW <- get monitorSize rectangleWidth
-
-    let windowX = monitorX
-    let windowY = monitorY
-    let windowWidth = fromIntegral monitorW
-    let windowHeight = fromIntegral barHeight
-
-    windowSetDefaultSize window (fromIntegral monitorW) (fromIntegral barHeight)
-    windowMove window windowX windowY
-    windowResize window windowWidth windowHeight
-
-    strut <- topStrut monitorSize
-    setStrutProperties window strut
+    windowSetDefaultSize window (rW size) (rH size)
+    windowMove window (rX size) (rY size)
+    windowResize window (rW size) (rH size)
+    setStrutProperties window (topStrut size)
 
 
 main :: IO ()

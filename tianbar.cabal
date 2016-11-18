@@ -58,7 +58,7 @@ executable tianbar
                      , unordered-containers
                      , utf8-string
                      , xdg-basedir
-  pkgconfig-depends:   gtk+-3.0
+  pkgconfig-depends:   gtk+-3.0 >= 3.22, webkit2gtk-4.0
   hs-source-dirs:      src
   main-is:             Main.hs
   other-modules:       System.Tianbar
