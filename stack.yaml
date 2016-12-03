@@ -9,4 +9,4 @@ extra-deps:
 - gi-javascriptcore-4.0.6
 - gi-webkit2-4.0.6
 - xmonad-contrib-0.12
-resolver: lts-7.8
+resolver: lts-7.11
