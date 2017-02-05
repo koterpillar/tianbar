@@ -3,7 +3,7 @@
  *
  * Requires 'jquery' to be available through RequireJS.
  */
-define(['jquery', './dbus'], function ($, dbus) {
+define(['jquery', './command', './dbus'], function ($, command, dbus) {
   "use strict";
 
   const MAX_VOLUME = 0x10000;
@@ -90,11 +90,7 @@ define(['jquery', './dbus'], function ($, dbus) {
     widget.attr('title', percentage + '%');
   };
 
-  $.ajax('tianbar:///execute', {
-    data: {
-      command: 'pacmd load-module module-dbus-protocol'
-    }
-  }).then(function () {
+  command.execute('pacmd load-module module-dbus-protocol').then(function () {
     return dbus.session.getProperty(
       'org.PulseAudio1',
       dbus.toObjectPath('/org/pulseaudio/server_lookup1'),
@@ -174,11 +170,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   $(document).ready(function () {
     self.widget().click(function () {
-      $.ajax('tianbar:///spawn', {
-        data: {
-          command: self.settings_command
-        }
-      });
+      command.spawn(self.settings_command);
     });
   });
 

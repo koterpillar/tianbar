@@ -3,7 +3,7 @@
  *
  * Requires 'jquery' to be available through RequireJS.
  */
-define(['jquery', './dbus'], function ($, dbus) {
+define(['jquery', './command', './dbus'], function ($, command, dbus) {
   "use strict";
 
   var self = {};
@@ -60,11 +60,7 @@ define(['jquery', './dbus'], function ($, dbus) {
   }
 
   $(document).ready(function () {
-    $.ajax('tianbar:///execute', {
-      data: {
-        command: 'ibus address'
-      }
-    }).then(function (address) {
+    command.execute('ibus address').then(function (address) {
       address = address.trim();
       dbus.connect(address).then(function (connectedBus) {
         bus = connectedBus;

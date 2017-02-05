@@ -1,4 +1,4 @@
-define(['jquery', './dbus'], function ($, dbus) {
+define(['jquery', './command', './dbus'], function ($, command, dbus) {
   "use strict";
 
   const self = {};
@@ -319,11 +319,7 @@ define(['jquery', './dbus'], function ($, dbus) {
 
   $(document).ready(function () {
     self.widget().click(function () {
-      $.ajax('tianbar:///spawn', {
-        data: {
-          command: self.settings_command
-        }
-      });
+      command.spawn(self.settings_command);
     });
 
     watch_properties(NM_OBJECT).then(function (evt) {
