@@ -19,6 +19,8 @@ import GI.Gtk.Objects.Window
 
 import System.Environment (getArgs, getProgName)
 
+import System.Posix.Resource
+
 import System.Tianbar.Configuration
 import System.Tianbar.StrutProperties
 import System.Tianbar.WebKit
@@ -58,8 +60,16 @@ sizeMainWindow window = do
     setStrutProperties window topStrut
 
 
+memoryLimit :: ResourceLimits
+memoryLimit = ResourceLimits limit limit
+  where
+    limit = ResourceLimit $ 1024 * 1024 * 800
+
+
 main :: IO ()
 main = do
+    setResourceLimit ResourceDataSize memoryLimit
+
     progName <- getProgName
     args <- getArgs
     _ <- GtkFunctions.init $ Just $ map T.pack (progName : args)

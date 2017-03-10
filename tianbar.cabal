@@ -55,9 +55,10 @@ executable tianbar
                      , split
                      , text
                      , transformers
-                     , vector
+                     , unix
                      , unordered-containers
                      , utf8-string
+                     , vector
                      , xdg-basedir
   pkgconfig-depends:   gtk+-3.0 >= 3.22, webkit2gtk-4.0
   hs-source-dirs:      src
