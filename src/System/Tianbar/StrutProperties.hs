@@ -15,7 +15,7 @@ import GI.Gdk.Structs.Atom
 
 import Foreign
 
-type StrutProperties = (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)
+type StrutProperties = (Int, Int, Int, Int)
 
 foreign import ccall "gdk_property_change" gdk_property_change ::
     Ptr Window ->                           -- window : TInterface "Gdk" "Window"
@@ -54,26 +54,14 @@ propertyChange window property type_ format mode elements = liftIO $ do
 
 -- | Reserve EWMH struts
 setStrutProperties :: Gtk.Window -> StrutProperties -> IO ()
-setStrutProperties window (left, right, top, bottom,
-                                left_start_y, left_end_y,
-                                right_start_y, right_end_y,
-                                top_start_x, top_end_x,
-                                bottom_start_x, bottom_end_x) = do
+setStrutProperties window (left, right, top, bottom) = do
     let data_ :: [CULong]
         data_ = map fromIntegral [ left
                                  , right
                                  , top
                                  , bottom
-                                 , left_start_y
-                                 , left_end_y
-                                 , right_start_y
-                                 , right_end_y
-                                 , top_start_x
-                                 , top_end_x
-                                 , bottom_start_x
-                                 , bottom_end_x
                                  ]
-    prop <- atomIntern "_NET_WM_STRUT_PARTIAL" False
+    prop <- atomIntern "_NET_WM_STRUT" False
     type_ <- atomIntern "CARDINAL" False
     Just gdkWindow <- Gtk.widgetGetWindow window
     propertyChange gdkWindow prop type_ 32 PropModeReplace data_

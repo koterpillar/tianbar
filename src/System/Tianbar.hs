@@ -44,14 +44,8 @@ tianbarRectangle = do
     return $ Rectangle monitorX monitorY monitorW (fromIntegral barHeight)
 
 
-topStrut :: Rectangle -> StrutProperties
-topStrut rect = (0, 0, barHeight, 0,
-                 0, 0,
-                 0, 0,
-                 xStart, xEnd,
-                 0, 0)
-    where xStart = fromIntegral $ rX rect
-          xEnd = fromIntegral $ rX rect + rW rect - 1
+topStrut :: StrutProperties
+topStrut = (0, 0, barHeight, 0)
 
 
 sizeMainWindow :: Window -> IO ()
@@ -61,7 +55,7 @@ sizeMainWindow window = do
     windowSetDefaultSize window (rW size) (rH size)
     windowMove window (rX size) (rY size)
     windowResize window (rW size) (rH size)
-    setStrutProperties window (topStrut size)
+    setStrutProperties window topStrut
 
 
 main :: IO ()
